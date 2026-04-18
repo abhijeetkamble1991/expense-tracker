@@ -18,3 +18,7 @@ def client(tmp_path, monkeypatch) -> TestClient:
 
     with TestClient(create_app()) as test_client:
         yield test_client
+
+    engine = get_engine()
+    engine.dispose()
+    get_engine.cache_clear()

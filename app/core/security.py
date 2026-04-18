@@ -28,7 +28,14 @@ def hash_password(password: str) -> str:
 
 
 def verify_password(password: str, stored_password_hash: str) -> bool:
-    algorithm, iterations, salt, expected_hash = stored_password_hash.split("$", maxsplit=3)
+    try:
+        algorithm, iterations, salt, expected_hash = stored_password_hash.split(
+            "$", maxsplit=3
+        )
+        parsed_iterations = int(iterations)
+    except (TypeError, ValueError):
+        return False
+
     if algorithm != "pbkdf2_sha256":
         return False
 
@@ -36,7 +43,7 @@ def verify_password(password: str, stored_password_hash: str) -> bool:
         "sha256",
         password.encode("utf-8"),
         salt.encode("utf-8"),
-        int(iterations),
+        parsed_iterations,
     ).hex()
     return hmac.compare_digest(password_hash, expected_hash)
 
