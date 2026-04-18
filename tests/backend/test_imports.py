@@ -20,6 +20,7 @@ def test_create_import_batch(client, auth_headers, monkeypatch):
                     posted_date="2026-04-10",
                     amount="550.00",
                     description="SWIGGY ORDER",
+                    raw_merchant="SWIGGY ONLINE",
                     merchant="SWIGGY ONLINE",
                     month_key="2026-04",
                     source_type="credit_card_pdf",

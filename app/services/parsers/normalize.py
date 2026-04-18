@@ -10,6 +10,7 @@ class NormalizedImportRow:
     posted_date: str | None
     amount: str
     description: str
+    raw_merchant: str
     merchant: str
     month_key: str
     source_type: str
@@ -31,6 +32,7 @@ def normalize_parsed_row(row: ParsedRow, month_key: str, source_type: str) -> No
         posted_date=_normalize_date(row.posted_date),
         amount=row.amount,
         description=row.description,
+        raw_merchant=row.merchant_guess,
         merchant=row.merchant_guess,
         month_key=month_key,
         source_type=source_type,

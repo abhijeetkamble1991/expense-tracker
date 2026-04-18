@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.transaction import Transaction
-from app.services.merchant_rules import find_matching_rule
+from app.services.merchant_rules import find_matching_rule, merchant_key
 from app.services.parsers import (
     NormalizedImportRow,
     ParsedRow,
@@ -19,10 +19,15 @@ ParserFn = Callable[[str], list[ParsedRow]]
 
 
 def is_duplicate_candidate(existing: Transaction, incoming: NormalizedImportRow) -> bool:
+    existing_merchant_key = merchant_key(existing.merchant)
+    incoming_merchant_keys = {
+        merchant_key(incoming.raw_merchant),
+        merchant_key(incoming.merchant),
+    }
     return (
         str(existing.amount) == incoming.amount
         and existing.transaction_date.isoformat() == incoming.transaction_date
-        and existing.merchant.lower() == incoming.merchant.lower()
+        and existing_merchant_key in incoming_merchant_keys
     )
 
 
