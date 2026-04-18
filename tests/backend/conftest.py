@@ -33,3 +33,55 @@ def auth_headers(client) -> dict[str, str]:
     assert response.status_code == 200
     access_token = response.json()["access_token"]
     return {"Authorization": f"Bearer {access_token}"}
+
+
+@pytest.fixture
+def seeded_month_data(client, auth_headers) -> dict[str, int]:
+    groceries_response = client.post(
+        "/spend-categories",
+        headers=auth_headers,
+        json={"name": "Groceries"},
+    )
+    assert groceries_response.status_code == 201
+
+    utilities_response = client.post(
+        "/spend-categories",
+        headers=auth_headers,
+        json={"name": "Utilities"},
+    )
+    assert utilities_response.status_code == 201
+
+    common_transaction = client.post(
+        "/transactions/manual",
+        headers=auth_headers,
+        json={
+            "transaction_date": "2026-04-05",
+            "amount": "425.00",
+            "description": "Electricity bill",
+            "merchant": "BESCOM",
+            "month_key": "2026-04",
+            "expense_category": "common",
+            "spend_category_id": utilities_response.json()["id"],
+        },
+    )
+    assert common_transaction.status_code == 201
+
+    personal_transaction = client.post(
+        "/transactions/manual",
+        headers=auth_headers,
+        json={
+            "transaction_date": "2026-04-11",
+            "amount": "1850.50",
+            "description": "Weekend groceries",
+            "merchant": "Nature Basket",
+            "month_key": "2026-04",
+            "expense_category": "personal",
+            "spend_category_id": groceries_response.json()["id"],
+        },
+    )
+    assert personal_transaction.status_code == 201
+
+    return {
+        "groceries_id": groceries_response.json()["id"],
+        "utilities_id": utilities_response.json()["id"],
+    }
