@@ -22,3 +22,14 @@ def client(tmp_path, monkeypatch) -> TestClient:
     engine = get_engine()
     engine.dispose()
     get_engine.cache_clear()
+
+
+@pytest.fixture
+def auth_headers(client) -> dict[str, str]:
+    response = client.post(
+        "/auth/login",
+        json={"username": "owner", "password": "secret123"},
+    )
+    assert response.status_code == 200
+    access_token = response.json()["access_token"]
+    return {"Authorization": f"Bearer {access_token}"}
