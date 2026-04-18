@@ -5,6 +5,7 @@ import {
   buildDetailedTransactions,
   buildMerchantSummary,
   buildReportMetrics,
+  buildSourceSummary,
   formatMonthSummary,
   useMonthReport,
   useMonths,
@@ -31,6 +32,7 @@ export function ReportHomePage() {
     ? buildCategoryAllocations(report, spendCategories)
     : [];
   const merchantSummary = report ? buildMerchantSummary(report) : [];
+  const sourceSummary = report ? buildSourceSummary(report) : [];
   const detailedTransactions = report
     ? buildDetailedTransactions(report, spendCategories)
     : [];
@@ -124,6 +126,23 @@ export function ReportHomePage() {
                   <p>{merchant.transactionCount} transactions</p>
                 </div>
                 <strong>{merchant.total}</strong>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="report-panel">
+          <div className="report-panel__header">
+            <h3>Source summary</h3>
+            <span>Imported and manual contribution by source</span>
+          </div>
+          <div className="stack-list">
+            {sourceSummary.map((source) => (
+              <article className="stack-list__item" key={source.source}>
+                <div>
+                  <h4>{source.source}</h4>
+                </div>
+                <strong>{source.total}</strong>
               </article>
             ))}
           </div>

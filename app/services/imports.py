@@ -94,11 +94,14 @@ def process_pdf_upload(
     month_key: str,
     source_type: str | None = None,
 ) -> tuple[dict[str, str | list[str]], list[NormalizedImportRow]]:
+    warnings: list[str] = []
     effective_source_type, parser_type, parser = _select_parser(
         filename=filename,
         source_type=source_type,
     )
     raw_text = extract_statement_text(file_bytes)
+    if not raw_text.strip():
+        warnings.append("No extractable text found in uploaded statement.")
     parsed_rows = parser(raw_text)
     rows = [
         normalize_parsed_row(
@@ -117,10 +120,12 @@ def process_pdf_upload(
         row.expense_category = rule.expense_category
 
     parse_status = "success" if rows else "parse_failed"
+    if parse_status == "parse_failed":
+        warnings.append("No transactions matched the selected parser.")
     metadata: dict[str, str | list[str]] = {
         "source_type": effective_source_type,
         "parser_type": parser_type,
         "parse_status": parse_status,
-        "warnings": [],
+        "warnings": warnings,
     }
     return metadata, rows

@@ -96,7 +96,11 @@ test("report home fetches months and renders report summary from the API", async
   expect(screen.getByText(/2026-04 summary/i)).toBeInTheDocument();
   expect(await screen.findByText("$4,280.45")).toBeInTheDocument();
   expect(await screen.findByText("1 expenses need review")).toBeInTheDocument();
+  expect(await screen.findByText("$1,800.00")).toBeInTheDocument();
+  expect(await screen.findByText("$2,480.45")).toBeInTheDocument();
   expect(await screen.findByText("Platform ops")).toBeInTheDocument();
+  expect(await screen.findByRole("heading", { name: /source summary/i })).toBeInTheDocument();
+  expect(await screen.findByText("manual")).toBeInTheDocument();
   await waitFor(() =>
     expect(screen.getAllByText(/1 transactions/)).toHaveLength(2),
   );

@@ -38,6 +38,11 @@ export type MerchantSummary = {
   transactionCount: number;
 };
 
+export type SourceSummary = {
+  source: string;
+  total: string;
+};
+
 export type DetailedTransaction = {
   id: number;
   merchant: string;
@@ -132,13 +137,14 @@ export function buildReportMetrics(
 
   return [
     { label: "Month total", value: formatCurrency(report.totals.overall ?? "0") },
-    { label: "Imported expenses", value: String(importedExpenses) },
+    { label: "Common spend", value: formatCurrency(report.totals.common ?? "0") },
+    { label: "Personal spend", value: formatCurrency(report.totals.personal ?? "0") },
     {
       label: "Expenses needing review",
       value: String(needsReviewCount),
       tone: "warning",
     },
-    { label: "Manual entries", value: String(manualEntries) },
+    { label: "Tracked sources", value: String(Object.keys(report.by_source).length) },
   ];
 }
 
@@ -173,6 +179,21 @@ export function buildMerchantSummary(
       ).length,
     }))
     .sort((left, right) => Number(right.total.replace(/[$,]/g, "")) - Number(left.total.replace(/[$,]/g, "")));
+}
+
+export function buildSourceSummary(
+  report: MonthlyReportResponse,
+): SourceSummary[] {
+  return Object.entries(report.by_source)
+    .map(([source, total]) => ({
+      source,
+      total: formatCurrency(total),
+    }))
+    .sort(
+      (left, right) =>
+        Number(right.total.replace(/[$,]/g, "")) -
+        Number(left.total.replace(/[$,]/g, "")),
+    );
 }
 
 export function buildDetailedTransactions(

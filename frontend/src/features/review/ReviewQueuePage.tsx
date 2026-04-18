@@ -83,14 +83,15 @@ export function ReviewQueuePage() {
         expenses={expenses}
         isSavingId={saveMutation.variables ?? null}
         onDraftChange={(transactionId, patch) => {
+          const expense = expenses.find((item) => item.id === transactionId);
           setDrafts((currentDrafts) => ({
             ...currentDrafts,
             [transactionId]: {
               ...(currentDrafts[transactionId] ?? {
-                merchant: "",
-                expenseCategory: "common",
-                spendCategoryId: null,
-                reviewStatus: "needs_review",
+                merchant: expense?.merchant ?? "",
+                expenseCategory: expense?.expense_category ?? "common",
+                spendCategoryId: expense?.spend_category_id ?? null,
+                reviewStatus: expense?.review_status ?? "needs_review",
               }),
               ...patch,
             },

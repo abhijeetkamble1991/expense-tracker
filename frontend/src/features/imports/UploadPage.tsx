@@ -94,6 +94,9 @@ export function UploadPage() {
             <div>
               <h3>{uploadedBatch.original_filename}</h3>
               <p>{uploadedBatch.extracted_count} transactions extracted</p>
+              {uploadedBatch.warnings.length > 0 ? (
+                <p>{uploadedBatch.warnings.join(" • ")}</p>
+              ) : null}
             </div>
             <strong>{uploadedBatch.parse_status}</strong>
           </article>
