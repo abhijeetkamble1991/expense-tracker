@@ -79,6 +79,7 @@ def update_transaction_review(
             detail="Transaction not found",
         )
 
+    original_merchant = transaction.merchant
     updates = payload.model_dump(exclude_unset=True)
     if "spend_category_id" in updates:
         spend_category = db.scalar(
@@ -104,7 +105,8 @@ def update_transaction_review(
     ):
         upsert_merchant_rule(
             db,
-            merchant=transaction.merchant,
+            raw_merchant=original_merchant,
+            canonical_merchant=transaction.merchant,
             expense_category=transaction.expense_category,
             spend_category_id=transaction.spend_category_id,
         )
