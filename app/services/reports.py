@@ -20,12 +20,17 @@ def is_valid_month_key(month_key: str) -> bool:
     return bool(MONTH_KEY_PATTERN.fullmatch(month_key))
 
 
-def build_month_report(transactions: list[Transaction]) -> dict[str, dict[str, str]]:
+def build_month_report(
+    transactions: list[Transaction],
+    *,
+    spend_category_names_by_id: dict[int, str] | None = None,
+) -> dict[str, dict[str, str]]:
     totals = {
         "overall": Decimal("0.00"),
         "common": Decimal("0.00"),
         "personal": Decimal("0.00"),
     }
+    spend_category_names_by_id = spend_category_names_by_id or {}
     by_spend_category: defaultdict[str, Decimal] = defaultdict(lambda: Decimal("0.00"))
     by_merchant: defaultdict[str, Decimal] = defaultdict(lambda: Decimal("0.00"))
     by_source: defaultdict[str, Decimal] = defaultdict(lambda: Decimal("0.00"))
@@ -36,7 +41,11 @@ def build_month_report(transactions: list[Transaction]) -> dict[str, dict[str, s
         by_source[transaction.source_type] += transaction.amount
         by_merchant[transaction.merchant] += transaction.amount
         if transaction.spend_category_id is not None:
-            by_spend_category[str(transaction.spend_category_id)] += transaction.amount
+            spend_category_name = spend_category_names_by_id.get(
+                transaction.spend_category_id,
+                str(transaction.spend_category_id),
+            )
+            by_spend_category[spend_category_name] += transaction.amount
 
     return {
         "totals": _format_decimal_map(totals),

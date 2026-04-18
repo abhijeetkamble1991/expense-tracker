@@ -33,6 +33,37 @@ class TransactionReviewUpdate(BaseModel):
         return trimmed
 
 
+@router.get("", response_model=list[TransactionResponse])
+def list_transactions(
+    month_key: str | None = None,
+    review_status: Literal["needs_review", "reviewed", "flagged"] | None = None,
+    source_type: str | None = None,
+    expense_category: Literal["common", "personal"] | None = None,
+    spend_category_id: int | None = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[Transaction]:
+    _ = current_user
+    query = select(Transaction)
+
+    if month_key is not None:
+        query = query.where(Transaction.month_key == month_key)
+    if review_status is not None:
+        query = query.where(Transaction.review_status == review_status)
+    if source_type is not None:
+        query = query.where(Transaction.source_type == source_type)
+    if expense_category is not None:
+        query = query.where(Transaction.expense_category == expense_category)
+    if spend_category_id is not None:
+        query = query.where(Transaction.spend_category_id == spend_category_id)
+
+    return list(
+        db.scalars(
+            query.order_by(Transaction.transaction_date.desc(), Transaction.id.desc())
+        )
+    )
+
+
 @router.post(
     "/manual",
     response_model=TransactionResponse,

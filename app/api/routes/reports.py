@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
 from app.db.session import get_db
+from app.models.spend_category import SpendCategory
 from app.models.transaction import Transaction
 from app.models.user import User
 from app.schemas.report import MonthlyReportResponse
@@ -42,7 +43,24 @@ def regenerate_report(
             detail="No transactions found for month",
         )
 
-    summary = build_month_report(transactions)
+    spend_category_ids = {
+        transaction.spend_category_id
+        for transaction in transactions
+        if transaction.spend_category_id is not None
+    }
+    spend_category_names_by_id = {}
+    if spend_category_ids:
+        spend_category_names_by_id = {
+            spend_category.id: spend_category.name
+            for spend_category in db.scalars(
+                select(SpendCategory).where(SpendCategory.id.in_(spend_category_ids))
+            )
+        }
+
+    summary = build_month_report(
+        transactions,
+        spend_category_names_by_id=spend_category_names_by_id,
+    )
     upsert_monthly_report_snapshot(
         db,
         month_key=month_key,

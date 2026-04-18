@@ -1,7 +1,9 @@
 from collections.abc import Callable
 from datetime import date
 from decimal import Decimal
+from io import BytesIO
 
+from pypdf import PdfReader
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -16,6 +18,23 @@ from app.services.parsers import (
 )
 
 ParserFn = Callable[[str], list[ParsedRow]]
+
+
+def extract_statement_text(file_bytes: bytes) -> str:
+    try:
+        reader = PdfReader(BytesIO(file_bytes))
+    except Exception:
+        return file_bytes.decode("utf-8", errors="ignore")
+
+    extracted_pages = [
+        page_text.strip()
+        for page in reader.pages
+        if (page_text := (page.extract_text() or "").strip())
+    ]
+    if extracted_pages:
+        return "\n".join(extracted_pages)
+
+    return file_bytes.decode("utf-8", errors="ignore")
 
 
 def is_duplicate_candidate(existing: Transaction, incoming: NormalizedImportRow) -> bool:
@@ -79,7 +98,7 @@ def process_pdf_upload(
         filename=filename,
         source_type=source_type,
     )
-    raw_text = file_bytes.decode("utf-8", errors="ignore")
+    raw_text = extract_statement_text(file_bytes)
     parsed_rows = parser(raw_text)
     rows = [
         normalize_parsed_row(

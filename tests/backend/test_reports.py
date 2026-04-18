@@ -21,6 +21,10 @@ def test_regenerate_report_returns_summary_for_month(
     assert body["month_key"] == "2026-04"
     assert body["totals"]["overall"] == "2275.50"
     assert body["totals"]["common"] == "425.00"
+    assert body["by_spend_category"] == {
+        "Groceries": "1850.50",
+        "Utilities": "425.00",
+    }
 
 
 def test_regenerate_report_rejects_invalid_month_format(client, auth_headers):

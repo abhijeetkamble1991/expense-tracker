@@ -2,7 +2,7 @@ from datetime import date
 from decimal import Decimal
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
 
 class ManualTransactionCreate(BaseModel):
@@ -48,6 +48,13 @@ class ManualTransactionCreate(BaseModel):
             return None
         trimmed = value.strip()
         return trimmed or None
+
+    @model_validator(mode="after")
+    def validate_month_key_matches_transaction_date(self) -> "ManualTransactionCreate":
+        expected_month_key = self.transaction_date.strftime("%Y-%m")
+        if self.month_key != expected_month_key:
+            raise ValueError("month_key must match transaction_date")
+        return self
 
 
 class TransactionResponse(BaseModel):

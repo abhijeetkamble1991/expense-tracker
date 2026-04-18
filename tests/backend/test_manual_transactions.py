@@ -71,3 +71,32 @@ def test_create_manual_transaction_rejects_invalid_text_fields(client, auth_head
     )
 
     assert response.status_code == 422
+
+
+def test_create_manual_transaction_rejects_month_key_mismatch(client, auth_headers):
+    category_response = client.post(
+        "/spend-categories",
+        headers=auth_headers,
+        json={"name": "Groceries"},
+    )
+    assert category_response.status_code == 201
+
+    response = client.post(
+        "/transactions/manual",
+        headers=auth_headers,
+        json={
+            "transaction_date": "2026-04-11",
+            "amount": "1850.50",
+            "description": "Weekend groceries",
+            "merchant": "Nature Basket",
+            "month_key": "2026-05",
+            "expense_category": "personal",
+            "spend_category_id": category_response.json()["id"],
+            "notes": "manual catch-up",
+        },
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"][0]["msg"] == (
+        "Value error, month_key must match transaction_date"
+    )
