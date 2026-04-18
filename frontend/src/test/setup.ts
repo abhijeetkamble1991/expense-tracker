@@ -1,71 +1,32 @@
 import "@testing-library/jest-dom";
 import { TextDecoder, TextEncoder } from "util";
+import {
+  Headers as CrossFetchHeaders,
+  Request as CrossFetchRequest,
+  Response as CrossFetchResponse,
+  fetch as crossFetch,
+} from "cross-fetch";
 
-Object.assign(globalThis, {
-  TextDecoder,
-  TextEncoder,
-});
-
-class TestHeaders {
-  private readonly values = new Map<string, string>();
-
-  constructor(init?: HeadersInit) {
-    if (!init) {
-      return;
-    }
-
-    if (Array.isArray(init)) {
-      init.forEach(([key, value]) => this.set(key, value));
-      return;
-    }
-
-    if (init instanceof TestHeaders) {
-      init.forEach((value, key) => this.set(key, value));
-      return;
-    }
-
-    Object.entries(init).forEach(([key, value]) => this.set(key, value));
-  }
-
-  forEach(callback: (value: string, key: string) => void) {
-    this.values.forEach((value, key) => callback(value, key));
-  }
-
-  get(name: string) {
-    return this.values.get(name.toLowerCase()) ?? null;
-  }
-
-  set(name: string, value: string) {
-    this.values.set(name.toLowerCase(), value);
-  }
+if (typeof globalThis.TextEncoder === "undefined") {
+  Object.assign(globalThis, { TextEncoder });
 }
 
-class TestRequest {
-  headers: TestHeaders;
-  method: string;
-  signal: AbortSignal | null;
-  url: string;
-
-  constructor(input: string | { url: string }, init: RequestInit = {}) {
-    this.url = typeof input === "string" ? input : input.url;
-    this.method = init.method ?? "GET";
-    this.headers = new TestHeaders(init.headers);
-    this.signal = init.signal ?? null;
-  }
+if (typeof globalThis.TextDecoder === "undefined") {
+  Object.assign(globalThis, { TextDecoder });
 }
 
-class TestResponse {
-  constructor(
-    public readonly body: BodyInit | null = null,
-    public readonly init: ResponseInit = {},
-  ) {}
+if (typeof globalThis.Headers === "undefined") {
+  Object.assign(globalThis, { Headers: CrossFetchHeaders });
 }
 
-Object.assign(globalThis, {
-  Headers: TestHeaders,
-  Request: TestRequest,
-  Response: TestResponse,
-  fetch: async () => {
-    throw new Error("fetch is not mocked in this test");
-  },
-});
+if (typeof globalThis.Request === "undefined") {
+  Object.assign(globalThis, { Request: CrossFetchRequest });
+}
+
+if (typeof globalThis.Response === "undefined") {
+  Object.assign(globalThis, { Response: CrossFetchResponse });
+}
+
+if (typeof globalThis.fetch === "undefined") {
+  Object.assign(globalThis, { fetch: crossFetch });
+}

@@ -119,6 +119,12 @@ input {
   text-decoration: none;
 }
 
+.app-shell__placeholder {
+  border-radius: 999px;
+  color: #64748b;
+  padding: 0.55rem 0.9rem;
+}
+
 .app-shell__link.is-active {
   background: #d1fae5;
   color: #065f46;

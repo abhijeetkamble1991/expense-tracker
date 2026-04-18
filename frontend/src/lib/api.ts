@@ -1,6 +1,8 @@
 import axios from "axios";
 
 export const AUTH_TOKEN_STORAGE_KEY = "expense-tracker.auth-token";
+const apiBaseUrl =
+  typeof __APP_API_BASE_URL__ === "string" ? __APP_API_BASE_URL__ : "/api";
 
 export function getStoredToken(): string | null {
   if (typeof window === "undefined") {
@@ -19,7 +21,7 @@ export function clearStoredToken() {
 }
 
 export const api = axios.create({
-  baseURL: "http://localhost:8000",
+  baseURL: apiBaseUrl,
 });
 
 api.interceptors.request.use((config) => {
