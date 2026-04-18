@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import datetime
 
 from app.services.parsers.base import ParsedRow
 
@@ -6,6 +7,7 @@ from app.services.parsers.base import ParsedRow
 @dataclass(slots=True)
 class NormalizedImportRow:
     transaction_date: str
+    posted_date: str | None
     amount: str
     description: str
     merchant: str
@@ -16,9 +18,17 @@ class NormalizedImportRow:
     source_reference: str | None
 
 
+def _normalize_date(value: str | None) -> str | None:
+    if value is None:
+        return None
+
+    return datetime.strptime(value, "%d/%m/%Y").date().isoformat()
+
+
 def normalize_parsed_row(row: ParsedRow, month_key: str, source_type: str) -> NormalizedImportRow:
     return NormalizedImportRow(
-        transaction_date=row.transaction_date,
+        transaction_date=_normalize_date(row.transaction_date),
+        posted_date=_normalize_date(row.posted_date),
         amount=row.amount,
         description=row.description,
         merchant=row.merchant_guess,

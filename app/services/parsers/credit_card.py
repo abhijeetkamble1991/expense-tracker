@@ -20,7 +20,7 @@ def parse_credit_card_statement_text(raw_text: str) -> list[ParsedRow]:
             continue
 
         description = match.group("description").strip()
-        merchant_guess = description.split()[0] if description else ""
+        merchant_guess = description
 
         rows.append(
             ParsedRow(
