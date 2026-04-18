@@ -2,11 +2,11 @@ import { NavLink, Outlet } from "react-router-dom";
 
 const links = [
   { to: "/reports", label: "Reports", isAvailable: true },
-  { label: "Upload", isAvailable: false },
-  { label: "Review Queue", isAvailable: false },
+  { to: "/imports/upload", label: "Upload", isAvailable: true },
+  { to: "/review-queue", label: "Review Queue", isAvailable: true },
   { label: "Transactions", isAvailable: false },
-  { label: "Add Expense", isAvailable: false },
-  { label: "Categories", isAvailable: false },
+  { to: "/manual-entry", label: "Add Expense", isAvailable: true },
+  { to: "/spend-categories", label: "Categories", isAvailable: true },
 ];
 
 export function AppShell() {

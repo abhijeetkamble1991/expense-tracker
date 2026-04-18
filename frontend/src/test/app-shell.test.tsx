@@ -16,7 +16,7 @@ test("unauthenticated users land on the login screen", async () => {
   ).toBeInTheDocument();
 });
 
-test("report shell keeps future destinations as placeholders until routes exist", async () => {
+test("report shell exposes implemented workflow routes and keeps the rest as placeholders", async () => {
   window.localStorage.setItem(AUTH_TOKEN_STORAGE_KEY, "test-token");
 
   const router = createMemoryRouter(routerConfig, {
@@ -29,9 +29,15 @@ test("report shell keeps future destinations as placeholders until routes exist"
     "href",
     "/reports",
   );
-  expect(screen.queryByRole("link", { name: "Upload" })).not.toBeInTheDocument();
-  expect(screen.getByText("Upload")).toBeInTheDocument();
-  expect(screen.getByText("Review Queue")).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Upload" })).toHaveAttribute(
+    "href",
+    "/imports/upload",
+  );
+  expect(screen.getByRole("link", { name: "Review Queue" })).toHaveAttribute(
+    "href",
+    "/review-queue",
+  );
+  expect(screen.getByText("Transactions")).toBeInTheDocument();
 
   window.localStorage.removeItem(AUTH_TOKEN_STORAGE_KEY);
 });
