@@ -427,3 +427,123 @@ def test_second_review_pass_updates_existing_raw_keyed_rule(
         assert raw_keyed_rule.expense_category == "personal"
         assert raw_keyed_rule.spend_category_id == spend_category_id
         assert canonical_keyed_rule is None
+
+
+def test_review_patch_allows_uncategorized_imported_transaction_response(
+    client,
+    auth_headers,
+    monkeypatch,
+):
+    def fake_parse(raw_text):
+        _ = raw_text
+        return [
+            ParsedRow(
+                transaction_date="09/04/2026",
+                posted_date="10/04/2026",
+                amount="550.00",
+                description="SWIGGY ORDER",
+                merchant_guess="SWIGGY ONLINE",
+                direction="debit",
+                source_reference="null-cat-001",
+            )
+        ]
+
+    monkeypatch.setattr("app.services.imports.parse_credit_card_statement_text", fake_parse)
+
+    import_response = client.post(
+        "/imports",
+        headers=auth_headers,
+        data={"month_key": "2026-04", "source_type": "credit_card_pdf"},
+        files={"file": ("statement.pdf", b"%PDF-1.4 fake", "application/pdf")},
+    )
+    assert import_response.status_code == 201
+
+    with Session(get_engine()) as db:
+        transaction = db.scalar(
+            select(Transaction)
+            .where(Transaction.source_reference == "null-cat-001")
+            .order_by(Transaction.id.desc())
+        )
+        assert transaction is not None
+        transaction_id = transaction.id
+
+    patch_response = client.patch(
+        f"/transactions/{transaction_id}",
+        headers=auth_headers,
+        json={
+            "merchant": "Still Swiggy",
+            "review_status": "needs_review",
+        },
+    )
+
+    assert patch_response.status_code == 200
+    body = patch_response.json()
+    assert body["merchant"] == "Still Swiggy"
+    assert body["spend_category_id"] is None
+    assert body["review_status"] == "needs_review"
+
+
+def test_reviewed_status_requires_spend_category_and_skips_rule_learning_without_one(
+    client,
+    auth_headers,
+    monkeypatch,
+):
+    def fake_parse(raw_text):
+        _ = raw_text
+        return [
+            ParsedRow(
+                transaction_date="09/04/2026",
+                posted_date="10/04/2026",
+                amount="550.00",
+                description="SWIGGY ORDER",
+                merchant_guess="SWIGGY ONLINE",
+                direction="debit",
+                source_reference="null-cat-002",
+            )
+        ]
+
+    monkeypatch.setattr("app.services.imports.parse_credit_card_statement_text", fake_parse)
+
+    import_response = client.post(
+        "/imports",
+        headers=auth_headers,
+        data={"month_key": "2026-04", "source_type": "credit_card_pdf"},
+        files={"file": ("statement.pdf", b"%PDF-1.4 fake", "application/pdf")},
+    )
+    assert import_response.status_code == 201
+
+    with Session(get_engine()) as db:
+        transaction = db.scalar(
+            select(Transaction)
+            .where(Transaction.source_reference == "null-cat-002")
+            .order_by(Transaction.id.desc())
+        )
+        assert transaction is not None
+        transaction_id = transaction.id
+
+    patch_response = client.patch(
+        f"/transactions/{transaction_id}",
+        headers=auth_headers,
+        json={
+            "merchant": "Swiggy",
+            "review_status": "reviewed",
+        },
+    )
+
+    assert patch_response.status_code == 422
+    assert patch_response.json() == {
+        "detail": "Reviewed transactions require a spend category"
+    }
+
+    with Session(get_engine()) as db:
+        refreshed_transaction = db.scalar(
+            select(Transaction).where(Transaction.id == transaction_id)
+        )
+        learned_rule = db.scalar(
+            select(MerchantRule).where(MerchantRule.merchant_key == "swiggy online")
+        )
+
+        assert refreshed_transaction is not None
+        assert refreshed_transaction.review_status == "needs_review"
+        assert refreshed_transaction.spend_category_id is None
+        assert learned_rule is None

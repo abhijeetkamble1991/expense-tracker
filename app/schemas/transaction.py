@@ -60,7 +60,7 @@ class TransactionResponse(BaseModel):
     merchant: str
     month_key: str
     expense_category: Literal["common", "personal"]
-    spend_category_id: int
+    spend_category_id: int | None
     source_type: str
     review_status: str
     notes: str | None

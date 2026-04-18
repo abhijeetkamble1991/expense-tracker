@@ -94,8 +94,16 @@ def update_transaction_review(
     for field_name, value in updates.items():
         setattr(transaction, field_name, value)
 
+    if transaction.review_status == "reviewed" and transaction.spend_category_id is None:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Reviewed transactions require a spend category",
+        )
+
     if (
         transaction.review_status == "reviewed"
+        and transaction.spend_category_id is not None
         and {
         "merchant",
         "expense_category",
