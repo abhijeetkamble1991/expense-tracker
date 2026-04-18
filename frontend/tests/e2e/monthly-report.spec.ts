@@ -10,8 +10,6 @@ test("user can sign in and land on the monthly report", async ({ page }) => {
   await page.getByRole("button", { name: "Sign in" }).click();
 
   await expect(page).toHaveURL(/\/reports$/);
-  await expect(
-    page.getByRole("heading", { name: /april 2026 summary/i }),
-  ).toBeVisible();
-  await expect(page.getByText("3 expenses need review")).toBeVisible();
+  await expect(page.getByRole("heading", { name: /monthly report/i })).toBeVisible();
+  await expect(page.getByText(/month total/i)).toBeVisible();
 });

@@ -15,7 +15,10 @@ export function ReportHomePage() {
       <div className="report-page__hero">
         <div>
           <p className="report-home__eyebrow">Reports</p>
-          <h2>{monthLabel} summary</h2>
+          <h2>Monthly report</h2>
+          <p className="report-home__copy">
+            {monthLabel} summary.
+          </p>
           <p className="report-home__copy">
             The report home keeps this month&apos;s totals, review pressure, and
             category drift visible before close.
