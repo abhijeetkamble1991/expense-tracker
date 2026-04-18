@@ -33,6 +33,7 @@ export function ManualEntryPage() {
       }),
     onSuccess: () => {
       setFeedbackMessage("Manual transaction saved.");
+      queryClient.invalidateQueries({ queryKey: ["months"] });
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: ["month-report"] });
     },
