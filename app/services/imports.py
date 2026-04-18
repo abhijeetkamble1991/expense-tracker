@@ -19,7 +19,9 @@ ParserFn = Callable[[str], list[ParsedRow]]
 
 
 def is_duplicate_candidate(existing: Transaction, incoming: NormalizedImportRow) -> bool:
-    existing_merchant_key = merchant_key(existing.merchant)
+    existing_merchant_key = merchant_key(
+        existing.raw_imported_merchant or existing.merchant
+    )
     incoming_merchant_keys = {
         merchant_key(incoming.raw_merchant),
         merchant_key(incoming.merchant),

@@ -16,6 +16,7 @@ class Transaction(Base):
     amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     merchant: Mapped[str] = mapped_column(String(200), nullable=False)
+    raw_imported_merchant: Mapped[str | None] = mapped_column(String(200))
     month_key: Mapped[str] = mapped_column(String(7), index=True)
     source_type: Mapped[str] = mapped_column(
         String(30),

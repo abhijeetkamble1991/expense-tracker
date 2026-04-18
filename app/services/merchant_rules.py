@@ -36,12 +36,6 @@ def upsert_merchant_rule(
 
     rule = db.scalar(select(MerchantRule).where(MerchantRule.merchant_key == key))
     if rule is None:
-        rule = db.scalar(
-            select(MerchantRule).where(
-                MerchantRule.canonical_merchant == raw_merchant.strip()
-            )
-        )
-    if rule is None:
         rule = MerchantRule(
             merchant_key=key,
             canonical_merchant=canonical_merchant.strip(),

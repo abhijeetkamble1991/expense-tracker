@@ -286,6 +286,7 @@ def test_raw_older_import_still_duplicates_after_rule_canonicalizes_reimport(
                 amount=Decimal("550.00"),
                 description="OLDER SWIGGY ORDER",
                 merchant="SWIGGY ONLINE",
+                raw_imported_merchant="SWIGGY ONLINE",
                 month_key="2026-04",
                 source_type="credit_card_pdf",
                 expense_category="personal",
@@ -547,3 +548,132 @@ def test_reviewed_status_requires_spend_category_and_skips_rule_learning_without
         assert refreshed_transaction.review_status == "needs_review"
         assert refreshed_transaction.spend_category_id is None
         assert learned_rule is None
+
+
+def test_second_review_pass_updates_correct_raw_keyed_rule_when_multiple_rules_share_canonical(
+    client,
+    auth_headers,
+    monkeypatch,
+):
+    category_response = client.post(
+        "/spend-categories",
+        headers=auth_headers,
+        json={"name": "Food Delivery"},
+    )
+    assert category_response.status_code == 201
+    spend_category_id = category_response.json()["id"]
+
+    def fake_first_parse(raw_text):
+        _ = raw_text
+        return [
+            ParsedRow(
+                transaction_date="09/04/2026",
+                posted_date="10/04/2026",
+                amount="550.00",
+                description="SWIGGY ORDER",
+                merchant_guess="SWIGGY ONLINE",
+                direction="debit",
+                source_reference="shared-001",
+            )
+        ]
+
+    monkeypatch.setattr("app.services.imports.parse_credit_card_statement_text", fake_first_parse)
+
+    first_import_response = client.post(
+        "/imports",
+        headers=auth_headers,
+        data={"month_key": "2026-04", "source_type": "credit_card_pdf"},
+        files={"file": ("statement.pdf", b"%PDF-1.4 fake", "application/pdf")},
+    )
+    assert first_import_response.status_code == 201
+
+    def fake_second_parse(raw_text):
+        _ = raw_text
+        return [
+            ParsedRow(
+                transaction_date="10/04/2026",
+                posted_date="11/04/2026",
+                amount="650.00",
+                description="SWIGGY INSTAMART",
+                merchant_guess="SWIGGY INSTAMART",
+                direction="debit",
+                source_reference="shared-002",
+            )
+        ]
+
+    monkeypatch.setattr("app.services.imports.parse_credit_card_statement_text", fake_second_parse)
+
+    second_import_response = client.post(
+        "/imports",
+        headers=auth_headers,
+        data={"month_key": "2026-04", "source_type": "credit_card_pdf"},
+        files={"file": ("statement-2.pdf", b"%PDF-1.4 fake", "application/pdf")},
+    )
+    assert second_import_response.status_code == 201
+
+    with Session(get_engine()) as db:
+        first_transaction = db.scalar(
+            select(Transaction)
+            .where(Transaction.source_reference == "shared-001")
+            .order_by(Transaction.id.desc())
+        )
+        second_transaction = db.scalar(
+            select(Transaction)
+            .where(Transaction.source_reference == "shared-002")
+            .order_by(Transaction.id.desc())
+        )
+        assert first_transaction is not None
+        assert second_transaction is not None
+        first_transaction_id = first_transaction.id
+        second_transaction_id = second_transaction.id
+
+    first_review = client.patch(
+        f"/transactions/{first_transaction_id}",
+        headers=auth_headers,
+        json={
+            "merchant": "Swiggy",
+            "expense_category": "common",
+            "spend_category_id": spend_category_id,
+            "review_status": "reviewed",
+        },
+    )
+    assert first_review.status_code == 200
+
+    second_review = client.patch(
+        f"/transactions/{second_transaction_id}",
+        headers=auth_headers,
+        json={
+            "merchant": "Swiggy",
+            "expense_category": "common",
+            "spend_category_id": spend_category_id,
+            "review_status": "reviewed",
+        },
+    )
+    assert second_review.status_code == 200
+
+    second_pass_edit = client.patch(
+        f"/transactions/{second_transaction_id}",
+        headers=auth_headers,
+        json={
+            "merchant": "Swiggy Instamart",
+            "expense_category": "personal",
+            "spend_category_id": spend_category_id,
+            "review_status": "reviewed",
+        },
+    )
+    assert second_pass_edit.status_code == 200
+
+    with Session(get_engine()) as db:
+        online_rule = db.scalar(
+            select(MerchantRule).where(MerchantRule.merchant_key == "swiggy online")
+        )
+        instamart_rule = db.scalar(
+            select(MerchantRule).where(MerchantRule.merchant_key == "swiggy instamart")
+        )
+
+        assert online_rule is not None
+        assert instamart_rule is not None
+        assert online_rule.canonical_merchant == "Swiggy"
+        assert online_rule.expense_category == "common"
+        assert instamart_rule.canonical_merchant == "Swiggy Instamart"
+        assert instamart_rule.expense_category == "personal"

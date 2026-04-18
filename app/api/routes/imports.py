@@ -58,6 +58,7 @@ def upload_import(
             amount=Decimal(row.amount),
             description=row.description,
             merchant=row.merchant,
+            raw_imported_merchant=row.raw_merchant,
             month_key=row.month_key,
             source_type=row.source_type,
             expense_category=row.expense_category,
@@ -77,4 +78,3 @@ def upload_import(
     db.commit()
     db.refresh(batch)
     return batch
-
