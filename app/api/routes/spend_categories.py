@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
@@ -19,6 +20,13 @@ def create_spend_category(
     _ = current_user
     spend_category = SpendCategory(name=payload.name)
     db.add(spend_category)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Spend category already exists",
+        ) from exc
     db.refresh(spend_category)
     return spend_category
