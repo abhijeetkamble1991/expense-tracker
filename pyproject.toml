@@ -1,0 +1,16 @@
+[project]
+name = "expense-tracker"
+version = "0.1.0"
+description = "Monthly expense tracker with PDF import and reporting"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+  "fastapi>=0.115.0",
+  "uvicorn>=0.30.0",
+  "httpx>=0.28.0",
+  "pytest>=8.3.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests/backend"]
