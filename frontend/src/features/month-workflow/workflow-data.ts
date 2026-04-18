@@ -8,9 +8,8 @@ export type ReviewExpense = {
   id: string;
   date: string;
   merchant: string;
-  amount: string;
   expenseCategory: string;
-  source: string;
+  spendCategory: string;
   status: string;
 };
 
@@ -18,6 +17,19 @@ export type CategoryAllocation = {
   category: string;
   amount: string;
   note: string;
+};
+
+export type MerchantSummary = {
+  merchant: string;
+  total: string;
+  transactionCount: number;
+};
+
+export type DetailedTransaction = {
+  id: string;
+  merchant: string;
+  amount: string;
+  detail: string;
 };
 
 export type UploadBatch = {
@@ -39,27 +51,24 @@ const reviewExpenses: ReviewExpense[] = [
     id: "rvw-102",
     date: "Apr 18",
     merchant: "Blue Tokai",
-    amount: "$42.80",
     expenseCategory: "Meals",
-    source: "Visa ending 2210",
+    spendCategory: "Client delivery",
     status: "Needs category check",
   },
   {
     id: "rvw-087",
     date: "Apr 16",
     merchant: "Uber",
-    amount: "$18.35",
     expenseCategory: "Local Travel",
-    source: "Imported CSV",
+    spendCategory: "Field visits",
     status: "Needs receipt",
   },
   {
     id: "rvw-075",
     date: "Apr 14",
     merchant: "AWS",
-    amount: "$320.00",
     expenseCategory: "Software",
-    source: "Manual rule",
+    spendCategory: "Platform ops",
     status: "Needs split",
   },
 ];
@@ -97,6 +106,33 @@ const uploadBatches: UploadBatch[] = [
   },
 ];
 
+const merchantSummary: MerchantSummary[] = [
+  { merchant: "AWS", total: "$1,120.00", transactionCount: 3 },
+  { merchant: "Blue Tokai", total: "$214.60", transactionCount: 5 },
+  { merchant: "Uber", total: "$186.40", transactionCount: 7 },
+];
+
+const detailedTransactions: DetailedTransaction[] = [
+  {
+    id: "txn-447",
+    merchant: "AWS",
+    amount: "$320.00",
+    detail: "Apr 14 • Software • Platform ops",
+  },
+  {
+    id: "txn-451",
+    merchant: "Blue Tokai",
+    amount: "$42.80",
+    detail: "Apr 18 • Meals • Client delivery",
+  },
+  {
+    id: "txn-455",
+    merchant: "Uber",
+    amount: "$18.35",
+    detail: "Apr 16 • Local Travel • Field visits",
+  },
+];
+
 const categoryCoverage = [
   { name: "Meals", ruleCount: 5, lastUpdated: "Apr 12" },
   { name: "Software", ruleCount: 8, lastUpdated: "Apr 09" },
@@ -115,6 +151,8 @@ export function useReportSummary() {
     metrics: reportSummary,
     needsReviewCount: 12,
     spendByCategory,
+    merchantSummary,
+    detailedTransactions,
   };
 }
 

@@ -9,7 +9,12 @@ test("review queue shows a table with expense category data", () => {
   const categoryHeader = within(table).getByRole("columnheader", {
     name: /expense category/i,
   });
+  const spendCategoryHeader = within(table).getByRole("columnheader", {
+    name: /spend category/i,
+  });
 
   expect(categoryHeader).toBeInTheDocument();
+  expect(spendCategoryHeader).toBeInTheDocument();
   expect(within(table).getByText("Meals")).toBeInTheDocument();
+  expect(within(table).getByText("Client delivery")).toBeInTheDocument();
 });

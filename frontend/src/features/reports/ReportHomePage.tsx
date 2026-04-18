@@ -1,9 +1,14 @@
-import { useReportSummary, useReviewQueue } from "../month-workflow/workflow-data";
+import { useReportSummary } from "../month-workflow/workflow-data";
 
 export function ReportHomePage() {
-  const { monthLabel, metrics, needsReviewCount, spendByCategory } =
-    useReportSummary();
-  const { expenses } = useReviewQueue();
+  const {
+    monthLabel,
+    metrics,
+    needsReviewCount,
+    spendByCategory,
+    merchantSummary,
+    detailedTransactions,
+  } = useReportSummary();
 
   return (
     <section className="report-home report-page">
@@ -40,7 +45,7 @@ export function ReportHomePage() {
       <div className="report-sections">
         <section className="report-panel">
           <div className="report-panel__header">
-            <h3>Category spend</h3>
+            <h3>Category chart</h3>
             <span>Top drivers this month</span>
           </div>
           <div className="stack-list">
@@ -58,19 +63,37 @@ export function ReportHomePage() {
 
         <section className="report-panel">
           <div className="report-panel__header">
-            <h3>Review queue snapshot</h3>
-            <span>Most urgent receipts and category fixes</span>
+            <h3>Merchant summary</h3>
+            <span>Merchants with the highest volume this month</span>
           </div>
           <div className="stack-list">
-            {expenses.slice(0, 3).map((expense) => (
-              <article className="stack-list__item" key={expense.id}>
+            {merchantSummary.map((merchant) => (
+              <article className="stack-list__item" key={merchant.merchant}>
                 <div>
-                  <h4>{expense.merchant}</h4>
+                  <h4>{merchant.merchant}</h4>
                   <p>
-                    {expense.date} • {expense.expenseCategory}
+                    {merchant.transactionCount} transactions
                   </p>
                 </div>
-                <strong>{expense.amount}</strong>
+                <strong>{merchant.total}</strong>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="report-panel">
+          <div className="report-panel__header">
+            <h3>Detailed transactions</h3>
+            <span>Line items included in this month&apos;s report</span>
+          </div>
+          <div className="stack-list">
+            {detailedTransactions.map((transaction) => (
+              <article className="stack-list__item" key={transaction.id}>
+                <div>
+                  <h4>{transaction.merchant}</h4>
+                  <p>{transaction.detail}</p>
+                </div>
+                <strong>{transaction.amount}</strong>
               </article>
             ))}
           </div>
