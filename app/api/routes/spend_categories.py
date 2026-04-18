@@ -16,7 +16,8 @@ def create_spend_category(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> SpendCategory:
-    spend_category = SpendCategory(user_id=current_user.id, name=payload.name)
+    _ = current_user
+    spend_category = SpendCategory(name=payload.name)
     db.add(spend_category)
     db.commit()
     db.refresh(spend_category)

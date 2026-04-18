@@ -20,18 +20,11 @@ def create_manual_transaction(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Transaction:
+    _ = current_user
     transaction = Transaction(
-        user_id=current_user.id,
-        transaction_date=payload.transaction_date,
-        amount=payload.amount,
-        description=payload.description,
-        merchant=payload.merchant,
-        month_key=payload.month_key,
-        expense_category=payload.expense_category,
-        spend_category_id=payload.spend_category_id,
+        **payload.model_dump(),
         source_type="manual",
         review_status="reviewed",
-        notes=payload.notes,
     )
     db.add(transaction)
     db.commit()
