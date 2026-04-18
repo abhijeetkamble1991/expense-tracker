@@ -1,4 +1,5 @@
 from datetime import datetime
+from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict
 
@@ -21,8 +22,9 @@ class StoredMonthlyReportResponse(BaseModel):
 
     id: int
     month_key: str
-    totals_json: str
-    by_source_json: str
-    by_merchant_json: str
-    by_spend_category_json: str
+    total_amount: Decimal
+    common_amount: Decimal
+    personal_amount: Decimal
+    unresolved_count: int
+    summary_json: str
     generated_at: datetime
