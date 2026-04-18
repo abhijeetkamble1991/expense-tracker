@@ -2,6 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 
 const frontendPort = 4173;
 const backendPort = 8000;
+const viteCommand = `${process.execPath} ./node_modules/vite/bin/vite.js --host 127.0.0.1 --port 4173 --strictPort`;
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -18,15 +19,14 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: "python -m uvicorn app.main:app --host 127.0.0.1 --port 8000",
+      command: "uv run uvicorn app.main:app --host 127.0.0.1 --port 8000",
       url: `http://127.0.0.1:${backendPort}/health`,
       cwd: "..",
       reuseExistingServer: true,
       timeout: 30_000,
     },
     {
-      command:
-        "pnpm exec vite --host 127.0.0.1 --port 4173 --strictPort",
+      command: viteCommand,
       url: `http://127.0.0.1:${frontendPort}/login`,
       cwd: ".",
       reuseExistingServer: true,
