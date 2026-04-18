@@ -25,7 +25,7 @@ class Transaction(Base):
     )
     expense_category: Mapped[str] = mapped_column(String(20), nullable=False)
     spend_category_id: Mapped[int | None] = mapped_column(ForeignKey("spend_categories.id"))
-    import_batch_id: Mapped[int | None] = mapped_column(Integer)
+    import_batch_id: Mapped[int | None] = mapped_column(ForeignKey("import_batches.id"))
     review_status: Mapped[str] = mapped_column(
         String(20),
         default="reviewed",
