@@ -50,7 +50,7 @@ def upload_import(
     db.flush()
 
     for row in rows:
-        matching_rule = find_matching_rule(db, row.merchant)
+        matching_rule = find_matching_rule(db, row.raw_merchant)
         duplicate = find_duplicate_transaction(db, incoming=row)
         transaction = Transaction(
             transaction_date=date.fromisoformat(row.transaction_date),
