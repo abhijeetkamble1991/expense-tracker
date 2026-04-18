@@ -26,7 +26,7 @@ export default defineConfig({
     },
     {
       command:
-        "/Users/akamble/Library/pnpm/pnpm exec vite --host 127.0.0.1 --port 4173 --strictPort",
+        "pnpm exec vite --host 127.0.0.1 --port 4173 --strictPort",
       url: `http://127.0.0.1:${frontendPort}/login`,
       cwd: ".",
       reuseExistingServer: true,
