@@ -26,6 +26,7 @@ Install frontend dependencies:
 
 ```bash
 npm --prefix frontend install
+npm --prefix frontend exec playwright install chromium
 ```
 
 Start the Vite dev server:
@@ -50,7 +51,7 @@ You can override these with `EXPENSE_TRACKER_BOOTSTRAP_USERNAME` and `EXPENSE_TR
 Backend:
 
 ```bash
-pytest
+uv run pytest
 ```
 
 Frontend RTL:
