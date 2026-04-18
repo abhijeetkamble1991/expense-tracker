@@ -104,3 +104,67 @@ test("review queue fetches pending transactions and saves review updates", async
   });
   expect(await screen.findByText(/saved review changes/i)).toBeInTheDocument();
 });
+
+test("review queue can save an untouched row using current transaction values", async () => {
+  mockedApi.get.mockImplementation((url) => {
+    if (url === "/transactions") {
+      return Promise.resolve({
+        data: [
+          {
+            id: 205,
+            transaction_date: "2026-04-20",
+            amount: "19.99",
+            description: "Snack",
+            merchant: "Corner Store",
+            month_key: "2026-04",
+            expense_category: "common",
+            spend_category_id: 8,
+            source_type: "credit_card_pdf",
+            review_status: "needs_review",
+            duplicate_suspected: false,
+            duplicate_reason: null,
+            notes: null,
+          },
+        ],
+      });
+    }
+
+    if (url === "/spend-categories") {
+      return Promise.resolve({
+        data: [{ id: 8, name: "Client delivery", is_active: true }],
+      });
+    }
+
+    return Promise.reject(new Error(`Unexpected GET ${url}`));
+  });
+
+  mockedApi.patch.mockResolvedValue({
+    data: {
+      id: 205,
+      transaction_date: "2026-04-20",
+      amount: "19.99",
+      description: "Snack",
+      merchant: "Corner Store",
+      month_key: "2026-04",
+      expense_category: "common",
+      spend_category_id: 8,
+      source_type: "credit_card_pdf",
+      review_status: "needs_review",
+      duplicate_suspected: false,
+      duplicate_reason: null,
+      notes: null,
+    },
+  });
+
+  renderWithProviders(<ReviewQueuePage />);
+  const user = userEvent.setup();
+
+  await user.click(await screen.findByRole("button", { name: /save 205/i }));
+
+  expect(mockedApi.patch).toHaveBeenCalledWith("/transactions/205", {
+    merchant: "Corner Store",
+    expense_category: "common",
+    spend_category_id: 8,
+    review_status: "needs_review",
+  });
+});

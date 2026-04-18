@@ -28,7 +28,13 @@ export function ReviewQueuePage() {
 
   const saveMutation = useMutation({
     mutationFn: async (transactionId: number) => {
-      const draft = drafts[transactionId];
+      const expense = expenses.find((item) => item.id === transactionId);
+      const draft = drafts[transactionId] ?? {
+        merchant: expense?.merchant ?? "",
+        expenseCategory: expense?.expense_category ?? "common",
+        spendCategoryId: expense?.spend_category_id ?? null,
+        reviewStatus: expense?.review_status ?? "needs_review",
+      };
 
       return api.patch(
         `/transactions/${transactionId}`,
