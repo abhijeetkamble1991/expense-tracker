@@ -26,6 +26,11 @@ Install frontend dependencies:
 
 ```bash
 npm --prefix frontend install
+```
+
+Before the first Playwright run on a clean checkout, install the Chromium browser once:
+
+```bash
 npm --prefix frontend exec playwright install chromium
 ```
 
@@ -51,8 +56,10 @@ You can override these with `EXPENSE_TRACKER_BOOTSTRAP_USERNAME` and `EXPENSE_TR
 Backend:
 
 ```bash
-uv run pytest
+pytest
 ```
+
+If you are not already running inside the environment synced by `uv`, use `uv run pytest`.
 
 Frontend RTL:
 
@@ -66,4 +73,4 @@ Playwright smoke:
 npm --prefix frontend exec playwright test
 ```
 
-The Playwright smoke test boots the backend with `python -m uvicorn`, boots the frontend with Vite on port `4173`, signs in with the seeded `owner` / `secret123` credentials, and verifies the monthly report landing page.
+The Playwright smoke test boots the backend with `uv run uvicorn`, boots the frontend with Vite on port `4173`, signs in with `EXPENSE_TRACKER_BOOTSTRAP_USERNAME` / `EXPENSE_TRACKER_BOOTSTRAP_PASSWORD` when those overrides are set, and otherwise uses the default seeded `owner` / `secret123` credentials.
