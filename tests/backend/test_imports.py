@@ -131,3 +131,78 @@ def test_import_uses_raw_merchant_rule_for_spend_category_when_canonical_merchan
         assert imported_transaction is not None
         assert imported_transaction.merchant == "Swiggy"
         assert imported_transaction.spend_category_id == grocery_response.json()["id"]
+
+
+def test_import_does_not_guess_spend_category_for_ambiguous_canonical_merchant(
+    client,
+    auth_headers,
+    monkeypatch,
+):
+    food_response = client.post(
+        "/spend-categories",
+        headers=auth_headers,
+        json={"name": "Food Delivery"},
+    )
+    assert food_response.status_code == 201
+
+    grocery_response = client.post(
+        "/spend-categories",
+        headers=auth_headers,
+        json={"name": "Groceries"},
+    )
+    assert grocery_response.status_code == 201
+
+    with Session(get_engine()) as db:
+        db.add(
+            MerchantRule(
+                merchant_key="swiggy online",
+                canonical_merchant="Swiggy",
+                expense_category="common",
+                spend_category_id=food_response.json()["id"],
+            )
+        )
+        db.add(
+            MerchantRule(
+                merchant_key="swiggy instamart",
+                canonical_merchant="Swiggy",
+                expense_category="personal",
+                spend_category_id=grocery_response.json()["id"],
+            )
+        )
+        db.commit()
+
+    def fake_parse(raw_text):
+        _ = raw_text
+        return [
+            ParsedRow(
+                transaction_date="09/04/2026",
+                posted_date="10/04/2026",
+                amount="725.00",
+                description="SWIGGY ORDER",
+                merchant_guess="Swiggy",
+                direction="debit",
+                source_reference="import-rule-002",
+            )
+        ]
+
+    monkeypatch.setattr("app.services.imports.parse_credit_card_statement_text", fake_parse)
+
+    response = client.post(
+        "/imports",
+        headers=auth_headers,
+        data={"month_key": "2026-04", "source_type": "credit_card_pdf"},
+        files={"file": ("statement.pdf", b"%PDF-1.4 fake", "application/pdf")},
+    )
+
+    assert response.status_code == 201
+
+    with Session(get_engine()) as db:
+        imported_transaction = db.scalar(
+            select(Transaction)
+            .where(Transaction.source_reference == "import-rule-002")
+            .order_by(Transaction.id.desc())
+        )
+
+        assert imported_transaction is not None
+        assert imported_transaction.merchant == "Swiggy"
+        assert imported_transaction.spend_category_id is None

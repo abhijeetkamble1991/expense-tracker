@@ -13,13 +13,7 @@ def find_matching_rule(db: Session, merchant: str) -> MerchantRule | None:
     if not key:
         return None
 
-    rule = db.scalar(select(MerchantRule).where(MerchantRule.merchant_key == key))
-    if rule is not None:
-        return rule
-
-    return db.scalar(
-        select(MerchantRule).where(MerchantRule.canonical_merchant == merchant.strip())
-    )
+    return db.scalar(select(MerchantRule).where(MerchantRule.merchant_key == key))
 
 
 def upsert_merchant_rule(
