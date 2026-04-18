@@ -4,7 +4,7 @@ const links = [
   { to: "/reports", label: "Reports", isAvailable: true },
   { to: "/imports/upload", label: "Upload", isAvailable: true },
   { to: "/review-queue", label: "Review Queue", isAvailable: true },
-  { label: "Transactions", isAvailable: false },
+  { to: "/transactions", label: "Transactions", isAvailable: true },
   { to: "/manual-entry", label: "Add Expense", isAvailable: true },
   { to: "/spend-categories", label: "Categories", isAvailable: true },
 ];

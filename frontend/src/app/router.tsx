@@ -7,6 +7,7 @@ import { ManualEntryPage } from "../features/manual-entry/ManualEntryPage";
 import { ReportHomePage } from "../features/reports/ReportHomePage";
 import { ReviewQueuePage } from "../features/review/ReviewQueuePage";
 import { SpendCategoriesPage } from "../features/spend-categories/SpendCategoriesPage";
+import { TransactionsPage } from "../features/transactions/TransactionsPage";
 import { getStoredToken } from "../lib/api";
 
 function RequireAuth() {
@@ -30,6 +31,7 @@ export const routerConfig: RouteObject[] = [
           { path: "reports", element: <ReportHomePage /> },
           { path: "imports/upload", element: <UploadPage /> },
           { path: "review-queue", element: <ReviewQueuePage /> },
+          { path: "transactions", element: <TransactionsPage /> },
           { path: "manual-entry", element: <ManualEntryPage /> },
           { path: "spend-categories", element: <SpendCategoriesPage /> },
         ],

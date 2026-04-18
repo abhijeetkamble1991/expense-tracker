@@ -1,20 +1,93 @@
-import { render, screen, within } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
 import { ReviewQueuePage } from "../features/review/ReviewQueuePage";
+import { api } from "../lib/api";
+import { renderWithProviders } from "./test-utils";
 
-test("review queue shows a table with expense category data", () => {
-  render(<ReviewQueuePage />);
+jest.mock("../lib/api", () => ({
+  api: {
+    get: jest.fn(),
+    post: jest.fn(),
+    patch: jest.fn(),
+  },
+}));
 
-  const table = screen.getByRole("table", { name: /expenses pending review/i });
-  const categoryHeader = within(table).getByRole("columnheader", {
-    name: /expense category/i,
+const mockedApi = api as jest.Mocked<typeof api>;
+
+beforeEach(() => {
+  mockedApi.get.mockReset();
+  mockedApi.patch.mockReset();
+});
+
+test("review queue fetches pending transactions and saves review updates", async () => {
+  mockedApi.get.mockImplementation((url) => {
+    if (url === "/transactions") {
+      return Promise.resolve({
+        data: [
+          {
+            id: 102,
+            transaction_date: "2026-04-18",
+            amount: "42.80",
+            description: "Coffee",
+            merchant: "Blue Tokai",
+            month_key: "2026-04",
+            expense_category: "personal",
+            spend_category_id: null,
+            source_type: "credit_card_pdf",
+            review_status: "needs_review",
+            notes: null,
+          },
+        ],
+      });
+    }
+
+    if (url === "/spend-categories") {
+      return Promise.resolve({
+        data: [{ id: 8, name: "Client delivery", is_active: true }],
+      });
+    }
+
+    return Promise.reject(new Error(`Unexpected GET ${url}`));
   });
-  const spendCategoryHeader = within(table).getByRole("columnheader", {
-    name: /spend category/i,
+
+  mockedApi.patch.mockResolvedValue({
+    data: {
+      id: 102,
+      transaction_date: "2026-04-18",
+      amount: "42.80",
+      description: "Coffee",
+      merchant: "Blue Tokai",
+      month_key: "2026-04",
+      expense_category: "personal",
+      spend_category_id: 8,
+      source_type: "credit_card_pdf",
+      review_status: "reviewed",
+      notes: null,
+    },
   });
 
-  expect(categoryHeader).toBeInTheDocument();
-  expect(spendCategoryHeader).toBeInTheDocument();
-  expect(within(table).getByText("Meals")).toBeInTheDocument();
-  expect(within(table).getByText("Client delivery")).toBeInTheDocument();
+  renderWithProviders(<ReviewQueuePage />);
+  const user = userEvent.setup();
+
+  const table = await screen.findByRole("table", {
+    name: /expenses pending review/i,
+  });
+  expect(
+    within(table).getByRole("columnheader", { name: /expense category/i }),
+  ).toBeInTheDocument();
+  expect(
+    within(table).getByRole("columnheader", { name: /spend category/i }),
+  ).toBeInTheDocument();
+  expect(await within(table).findByText("Personal")).toBeInTheDocument();
+
+  await user.selectOptions(screen.getByLabelText("Spend category 102"), "8");
+  await user.selectOptions(screen.getByLabelText("Status 102"), "reviewed");
+  await user.click(await screen.findByRole("button", { name: /save 102/i }));
+
+  expect(mockedApi.patch).toHaveBeenCalledWith("/transactions/102", {
+    spend_category_id: 8,
+    review_status: "reviewed",
+  });
+  expect(await screen.findByText(/saved review changes/i)).toBeInTheDocument();
 });

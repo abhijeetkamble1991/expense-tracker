@@ -1,14 +1,42 @@
-import { useReportSummary } from "../month-workflow/workflow-data";
+import { useEffect, useState } from "react";
+
+import {
+  buildCategoryAllocations,
+  buildDetailedTransactions,
+  buildMerchantSummary,
+  buildReportMetrics,
+  formatMonthSummary,
+  useMonthReport,
+  useMonths,
+  useSpendCategories,
+} from "../month-workflow/workflow-data";
 
 export function ReportHomePage() {
-  const {
-    monthLabel,
-    metrics,
-    needsReviewCount,
-    spendByCategory,
-    merchantSummary,
-    detailedTransactions,
-  } = useReportSummary();
+  const { data: months = [], isLoading: isLoadingMonths } = useMonths();
+  const { data: spendCategories = [] } = useSpendCategories();
+  const [selectedMonth, setSelectedMonth] = useState<string>("");
+
+  useEffect(() => {
+    if (!selectedMonth && months.length > 0) {
+      setSelectedMonth(months[0]);
+    }
+  }, [months, selectedMonth]);
+
+  const { data: report, isLoading: isLoadingReport } = useMonthReport(
+    selectedMonth || null,
+  );
+
+  const metrics = report ? buildReportMetrics(report) : [];
+  const spendByCategory = report
+    ? buildCategoryAllocations(report, spendCategories)
+    : [];
+  const merchantSummary = report ? buildMerchantSummary(report) : [];
+  const detailedTransactions = report
+    ? buildDetailedTransactions(report, spendCategories)
+    : [];
+  const needsReviewCount =
+    report?.transactions.filter((transaction) => transaction.review_status !== "reviewed")
+      .length ?? 0;
 
   return (
     <section className="report-home report-page">
@@ -17,19 +45,38 @@ export function ReportHomePage() {
           <p className="report-home__eyebrow">Reports</p>
           <h2>Monthly report</h2>
           <p className="report-home__copy">
-            {monthLabel} summary.
+            {selectedMonth ? formatMonthSummary(selectedMonth) : "Pick a month to begin."}
           </p>
           <p className="report-home__copy">
             The report home keeps this month&apos;s totals, review pressure, and
             category drift visible before close.
           </p>
         </div>
-        <p className="report-page__review-pill">
-          {needsReviewCount} expenses need review
-        </p>
+        <div className="page-controls">
+          <label className="field">
+            Month
+            <select
+              onChange={(event) => setSelectedMonth(event.target.value)}
+              value={selectedMonth}
+            >
+              {months.map((month) => (
+                <option key={month} value={month}>
+                  {month}
+                </option>
+              ))}
+            </select>
+          </label>
+          <p className="report-page__review-pill">
+            {needsReviewCount} expenses need review
+          </p>
+        </div>
       </div>
 
-      <div className="summary-strip" aria-label={`${monthLabel} totals`}>
+      {isLoadingMonths || isLoadingReport ? (
+        <p className="status-copy">Loading monthly report…</p>
+      ) : null}
+
+      <div className="summary-strip" aria-label={`${selectedMonth} totals`}>
         {metrics.map((metric) => (
           <article
             className={
@@ -74,9 +121,7 @@ export function ReportHomePage() {
               <article className="stack-list__item" key={merchant.merchant}>
                 <div>
                   <h4>{merchant.merchant}</h4>
-                  <p>
-                    {merchant.transactionCount} transactions
-                  </p>
+                  <p>{merchant.transactionCount} transactions</p>
                 </div>
                 <strong>{merchant.total}</strong>
               </article>

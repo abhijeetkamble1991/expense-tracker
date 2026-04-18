@@ -1,25 +1,28 @@
+import { useQuery } from "@tanstack/react-query";
+
+import { api } from "../../lib/api";
+
 export type SummaryMetric = {
   label: string;
   value: string;
   tone?: "default" | "warning";
 };
 
-type WorkflowTransaction = {
-  id: string;
-  date: string;
+export type ApiTransaction = {
+  id: number;
+  transaction_date: string;
+  amount: string;
+  description: string;
   merchant: string;
-  amount: number;
-  expenseCategory: string;
-  spendCategory: string;
-  source: "imported" | "manual";
-  status: string;
-  needsReview: boolean;
+  month_key: string;
+  expense_category: "common" | "personal";
+  spend_category_id: number | null;
+  source_type: string;
+  review_status: "needs_review" | "reviewed" | "flagged";
+  notes: string | null;
 };
 
-export type ReviewExpense = Pick<
-  WorkflowTransaction,
-  "id" | "date" | "merchant" | "expenseCategory" | "spendCategory" | "status"
->;
+export type ReviewExpense = ApiTransaction;
 
 export type CategoryAllocation = {
   category: string;
@@ -34,268 +37,99 @@ export type MerchantSummary = {
 };
 
 export type DetailedTransaction = {
-  id: string;
+  id: number;
   merchant: string;
   amount: string;
   detail: string;
 };
 
-export type UploadBatch = {
-  vendor: string;
-  status: string;
-  receivedAt: string;
-  transactions: number;
+export type SpendCategory = {
+  id: number;
+  name: string;
+  is_active: boolean;
 };
 
-const workflowTransactions: WorkflowTransaction[] = [
-  {
-    id: "rvw-102",
-    date: "Apr 18",
-    merchant: "Blue Tokai",
-    amount: 42.8,
-    expenseCategory: "Meals",
-    spendCategory: "Client delivery",
-    source: "imported",
-    status: "Needs category check",
-    needsReview: true,
-  },
-  {
-    id: "rvw-087",
-    date: "Apr 16",
-    merchant: "Uber",
-    amount: 18.35,
-    expenseCategory: "Local Travel",
-    spendCategory: "Field visits",
-    source: "imported",
-    status: "Needs receipt",
-    needsReview: true,
-  },
-  {
-    id: "rvw-075",
-    date: "Apr 14",
-    merchant: "AWS",
-    amount: 320,
-    expenseCategory: "Software",
-    spendCategory: "Platform ops",
-    source: "manual",
-    status: "Needs split",
-    needsReview: true,
-  },
-  {
-    id: "txn-446",
-    date: "Apr 13",
-    merchant: "AWS",
-    amount: 400,
-    expenseCategory: "Software",
-    spendCategory: "Platform ops",
-    source: "imported",
-    status: "Ready",
-    needsReview: false,
-  },
-  {
-    id: "txn-445",
-    date: "Apr 08",
-    merchant: "AWS",
-    amount: 400,
-    expenseCategory: "Software",
-    spendCategory: "Platform ops",
-    source: "imported",
-    status: "Ready",
-    needsReview: false,
-  },
-  {
-    id: "txn-452",
-    date: "Apr 11",
-    merchant: "Blue Tokai",
-    amount: 171.8,
-    expenseCategory: "Meals",
-    spendCategory: "Client delivery",
-    source: "manual",
-    status: "Ready",
-    needsReview: false,
-  },
-  {
-    id: "txn-456",
-    date: "Apr 09",
-    merchant: "Uber",
-    amount: 168.05,
-    expenseCategory: "Local Travel",
-    spendCategory: "Field visits",
-    source: "imported",
-    status: "Ready",
-    needsReview: false,
-  },
-  {
-    id: "txn-460",
-    date: "Apr 07",
-    merchant: "Stripe",
-    amount: 980.25,
-    expenseCategory: "Processing Fees",
-    spendCategory: "Revenue ops",
-    source: "imported",
-    status: "Ready",
-    needsReview: false,
-  },
-  {
-    id: "txn-463",
-    date: "Apr 05",
-    merchant: "Notion",
-    amount: 699.2,
-    expenseCategory: "Software",
-    spendCategory: "Back office",
-    source: "manual",
-    status: "Ready",
-    needsReview: false,
-  },
-  {
-    id: "txn-468",
-    date: "Apr 03",
-    merchant: "Delta",
-    amount: 1080,
-    expenseCategory: "Travel",
-    spendCategory: "Client delivery",
-    source: "imported",
-    status: "Ready",
-    needsReview: false,
-  },
-];
-
-const uploadBatches: UploadBatch[] = [
-  {
-    vendor: "Corporate card CSV",
-    status: "Imported",
-    receivedAt: "Apr 18, 2026 09:30",
-    transactions: 48,
-  },
-  {
-    vendor: "Bank statement PDF",
-    status: "Ready for mapping",
-    receivedAt: "Apr 17, 2026 18:10",
-    transactions: 19,
-  },
-];
-
-const categoryCoverage = [
-  { name: "Meals", ruleCount: 5, lastUpdated: "Apr 12" },
-  { name: "Software", ruleCount: 8, lastUpdated: "Apr 09" },
-  { name: "Office supplies", ruleCount: 3, lastUpdated: "Apr 02" },
-];
-
-const manualEntryPrompts = [
-  "Capture cash purchases before month end close.",
-  "Use manual entry when an imported record is missing.",
-  "Attach context so review can stay lightweight later.",
-];
-
-const categoryNotes: Record<string, string> = {
-  Software: "Subscription renewals and tooling spend are concentrated here.",
-  Travel: "Client travel is the main driver this month.",
-  Meals: "Team lunches and client meetings are grouped here.",
-  "Local Travel": "Short-haul rides tied to field visits.",
-  "Processing Fees": "Payment platform costs linked to collections.",
+export type ImportBatch = {
+  id: number;
+  month_key: string;
+  source_type: string;
+  original_filename: string;
+  parser_type: string;
+  parse_status: string;
+  extracted_count: number;
+  skipped_count: number;
+  flagged_count: number;
+  warnings: string[];
+  uploaded_at: string;
 };
 
-function formatCurrency(amount: number) {
+export type MonthlyReportResponse = {
+  month_key: string;
+  totals: Record<string, string>;
+  by_source: Record<string, string>;
+  by_merchant: Record<string, string>;
+  by_spend_category: Record<string, string>;
+  transactions: ApiTransaction[];
+};
+
+type TransactionFilters = {
+  month_key?: string;
+  review_status?: ApiTransaction["review_status"];
+  source_type?: string;
+  expense_category?: ApiTransaction["expense_category"];
+  spend_category_id?: number;
+};
+
+const spendCategoryNotes: Record<string, string> = {
+  "Platform ops": "Infrastructure and tooling that supports delivery.",
+  "Client delivery": "Travel, meals, and direct delivery costs.",
+  "Revenue ops": "Processing and collections related spend.",
+};
+
+export function formatCurrency(amount: number | string) {
+  const numericAmount = typeof amount === "string" ? Number(amount) : amount;
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
-  }).format(amount);
+  }).format(numericAmount);
 }
 
-function parseCurrency(currency: string) {
-  return Number(currency.replace(/[$,]/g, ""));
+export function formatExpenseCategory(
+  category: ApiTransaction["expense_category"],
+) {
+  return category === "common" ? "Common" : "Personal";
 }
 
-export function useReportSummary() {
-  const reviewExpenses: ReviewExpense[] = workflowTransactions
-    .filter((transaction) => transaction.needsReview)
-    .map(({ id, date, merchant, expenseCategory, spendCategory, status }) => ({
-      id,
-      date,
-      merchant,
-      expenseCategory,
-      spendCategory,
-      status,
-    }));
+export function formatMonthSummary(monthKey: string) {
+  return `${monthKey} summary`;
+}
 
-  const needsReviewCount = reviewExpenses.length;
-  const monthTotal = workflowTransactions.reduce(
-    (total, transaction) => total + transaction.amount,
-    0,
-  );
-  const importedExpenses = workflowTransactions.filter(
-    (transaction) => transaction.source === "imported",
+export function formatTransactionDetail(
+  transaction: ApiTransaction,
+  spendCategories: SpendCategory[],
+) {
+  const spendCategoryName =
+    spendCategories.find((category) => category.id === transaction.spend_category_id)
+      ?.name ?? "Unassigned";
+
+  return `${transaction.transaction_date} • ${transaction.expense_category} • ${spendCategoryName}`;
+}
+
+export function buildReportMetrics(
+  report: MonthlyReportResponse,
+): SummaryMetric[] {
+  const importedExpenses = report.transactions.filter(
+    (transaction) => transaction.source_type !== "manual",
   ).length;
-  const manualEntries = workflowTransactions.filter(
-    (transaction) => transaction.source === "manual",
+  const manualEntries = report.transactions.filter(
+    (transaction) => transaction.source_type === "manual",
+  ).length;
+  const needsReviewCount = report.transactions.filter(
+    (transaction) => transaction.review_status !== "reviewed",
   ).length;
 
-  const spendByCategory: CategoryAllocation[] = Object.values(
-    workflowTransactions.reduce<Record<string, CategoryAllocation>>(
-      (accumulator, transaction) => {
-        const existing = accumulator[transaction.expenseCategory];
-
-        if (existing) {
-          existing.amount = formatCurrency(
-            parseCurrency(existing.amount) + transaction.amount,
-          );
-          return accumulator;
-        }
-
-        accumulator[transaction.expenseCategory] = {
-          category: transaction.expenseCategory,
-          amount: formatCurrency(transaction.amount),
-          note:
-            categoryNotes[transaction.expenseCategory] ??
-            "Spend grouped for monthly reporting.",
-        };
-
-        return accumulator;
-      },
-      {},
-    ),
-  )
-    .sort((left, right) => parseCurrency(right.amount) - parseCurrency(left.amount))
-    .slice(0, 3);
-
-  const merchantSummary: MerchantSummary[] = Object.values(
-    workflowTransactions.reduce<Record<string, MerchantSummary>>(
-      (accumulator, transaction) => {
-        const existing = accumulator[transaction.merchant];
-
-        if (existing) {
-          existing.total = formatCurrency(
-            parseCurrency(existing.total) + transaction.amount,
-          );
-          existing.transactionCount += 1;
-          return accumulator;
-        }
-
-        accumulator[transaction.merchant] = {
-          merchant: transaction.merchant,
-          total: formatCurrency(transaction.amount),
-          transactionCount: 1,
-        };
-
-        return accumulator;
-      },
-      {},
-    ),
-  )
-    .sort((left, right) => parseCurrency(right.total) - parseCurrency(left.total))
-    .slice(0, 3);
-
-  const detailedTransactions: DetailedTransaction[] = workflowTransactions
-    .slice(0, 3)
-    .map((transaction) => ({
-      id: transaction.id,
-      merchant: transaction.merchant,
-      amount: formatCurrency(transaction.amount),
-      detail: `${transaction.date} • ${transaction.expenseCategory} • ${transaction.spendCategory}`,
-    }));
-
-  const metrics: SummaryMetric[] = [
-    { label: "Month total", value: formatCurrency(monthTotal) },
+  return [
+    { label: "Month total", value: formatCurrency(report.totals.overall ?? "0") },
     { label: "Imported expenses", value: String(importedExpenses) },
     {
       label: "Expenses needing review",
@@ -304,43 +138,107 @@ export function useReportSummary() {
     },
     { label: "Manual entries", value: String(manualEntries) },
   ];
-
-  return {
-    monthLabel: "April 2026",
-    metrics,
-    needsReviewCount,
-    spendByCategory,
-    merchantSummary,
-    detailedTransactions,
-  };
 }
 
-export function useReviewQueue() {
-  const expenses: ReviewExpense[] = workflowTransactions
-    .filter((transaction) => transaction.needsReview)
-    .map(({ id, date, merchant, expenseCategory, spendCategory, status }) => ({
-      id,
-      date,
+export function buildCategoryAllocations(
+  report: MonthlyReportResponse,
+  _spendCategories: SpendCategory[],
+): CategoryAllocation[] {
+  return Object.entries(report.by_spend_category)
+    .map(([categoryName, amount]) => ({
+      category: categoryName,
+      amount: formatCurrency(amount),
+      note:
+        spendCategoryNotes[categoryName] ??
+        "Spend grouped from the current month report.",
+    }))
+    .sort(
+      (left, right) =>
+        Number(right.amount.replace(/[$,]/g, "")) -
+        Number(left.amount.replace(/[$,]/g, "")),
+    );
+}
+
+export function buildMerchantSummary(
+  report: MonthlyReportResponse,
+): MerchantSummary[] {
+  return Object.entries(report.by_merchant)
+    .map(([merchant, total]) => ({
       merchant,
-      expenseCategory,
-      spendCategory,
-      status,
-    }));
+      total: formatCurrency(total),
+      transactionCount: report.transactions.filter(
+        (transaction) => transaction.merchant === merchant,
+      ).length,
+    }))
+    .sort((left, right) => Number(right.total.replace(/[$,]/g, "")) - Number(left.total.replace(/[$,]/g, "")));
+}
 
+export function buildDetailedTransactions(
+  report: MonthlyReportResponse,
+  spendCategories: SpendCategory[],
+): DetailedTransaction[] {
+  return report.transactions.slice(0, 5).map((transaction) => ({
+    id: transaction.id,
+    merchant: transaction.merchant,
+    amount: formatCurrency(transaction.amount),
+    detail: formatTransactionDetail(transaction, spendCategories),
+  }));
+}
+
+export function useMonths() {
+  return useQuery({
+    queryKey: ["months"],
+    queryFn: async () => {
+      const response = await api.get<string[]>("/months");
+      return response.data;
+    },
+  });
+}
+
+export function useSpendCategories() {
+  return useQuery({
+    queryKey: ["spend-categories"],
+    queryFn: async () => {
+      const response = await api.get<SpendCategory[]>("/spend-categories");
+      return response.data;
+    },
+  });
+}
+
+export function useMonthReport(monthKey: string | null) {
+  return useQuery({
+    enabled: monthKey !== null,
+    queryKey: ["month-report", monthKey],
+    queryFn: async () => {
+      const response = await api.post<MonthlyReportResponse>(
+        `/reports/${monthKey}/regenerate`,
+      );
+      return response.data;
+    },
+  });
+}
+
+export function useTransactions(filters: TransactionFilters) {
+  return useQuery({
+    queryKey: ["transactions", filters],
+    queryFn: async () => {
+      const response = await api.get<ApiTransaction[]>("/transactions", {
+        params: filters,
+      });
+      return response.data;
+    },
+  });
+}
+
+export function buildReviewPayload({
+  reviewStatus,
+  spendCategoryId,
+}: {
+  reviewStatus: ApiTransaction["review_status"];
+  spendCategoryId: number | null;
+}) {
   return {
-    expenses,
-    totalPending: expenses.length,
+    review_status: reviewStatus,
+    ...(spendCategoryId !== null ? { spend_category_id: spendCategoryId } : {}),
   };
-}
-
-export function useUploadBatches() {
-  return uploadBatches;
-}
-
-export function useCategoryCoverage() {
-  return categoryCoverage;
-}
-
-export function useManualEntryPrompts() {
-  return manualEntryPrompts;
 }
