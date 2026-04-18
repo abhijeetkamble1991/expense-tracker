@@ -36,6 +36,8 @@ test("review queue fetches pending transactions and saves review updates", async
             spend_category_id: null,
             source_type: "credit_card_pdf",
             review_status: "needs_review",
+            duplicate_suspected: true,
+            duplicate_reason: "Matches transaction #51",
             notes: null,
           },
         ],
@@ -63,6 +65,8 @@ test("review queue fetches pending transactions and saves review updates", async
       spend_category_id: 8,
       source_type: "credit_card_pdf",
       review_status: "reviewed",
+      duplicate_suspected: true,
+      duplicate_reason: "Matches transaction #51",
       notes: null,
     },
   });
@@ -79,13 +83,22 @@ test("review queue fetches pending transactions and saves review updates", async
   expect(
     within(table).getByRole("columnheader", { name: /spend category/i }),
   ).toBeInTheDocument();
+  expect(
+    within(table).getByRole("columnheader", { name: /warning/i }),
+  ).toBeInTheDocument();
   expect(await within(table).findByText("Personal")).toBeInTheDocument();
+  expect(within(table).getByText("Matches transaction #51")).toBeInTheDocument();
 
+  await user.clear(screen.getByLabelText("Merchant 102"));
+  await user.type(screen.getByLabelText("Merchant 102"), "Blue Tokai Cafe");
+  await user.selectOptions(screen.getByLabelText("Expense category 102"), "common");
   await user.selectOptions(screen.getByLabelText("Spend category 102"), "8");
   await user.selectOptions(screen.getByLabelText("Status 102"), "reviewed");
   await user.click(await screen.findByRole("button", { name: /save 102/i }));
 
   expect(mockedApi.patch).toHaveBeenCalledWith("/transactions/102", {
+    merchant: "Blue Tokai Cafe",
+    expense_category: "common",
     spend_category_id: 8,
     review_status: "reviewed",
   });

@@ -19,6 +19,8 @@ export type ApiTransaction = {
   spend_category_id: number | null;
   source_type: string;
   review_status: "needs_review" | "reviewed" | "flagged";
+  duplicate_suspected: boolean;
+  duplicate_reason: string | null;
   notes: string | null;
 };
 
@@ -177,7 +179,7 @@ export function buildDetailedTransactions(
   report: MonthlyReportResponse,
   spendCategories: SpendCategory[],
 ): DetailedTransaction[] {
-  return report.transactions.slice(0, 5).map((transaction) => ({
+  return report.transactions.map((transaction) => ({
     id: transaction.id,
     merchant: transaction.merchant,
     amount: formatCurrency(transaction.amount),
@@ -231,13 +233,19 @@ export function useTransactions(filters: TransactionFilters) {
 }
 
 export function buildReviewPayload({
+  merchant,
+  expenseCategory,
   reviewStatus,
   spendCategoryId,
 }: {
+  merchant: string;
+  expenseCategory: ApiTransaction["expense_category"];
   reviewStatus: ApiTransaction["review_status"];
   spendCategoryId: number | null;
 }) {
   return {
+    merchant,
+    expense_category: expenseCategory,
     review_status: reviewStatus,
     ...(spendCategoryId !== null ? { spend_category_id: spendCategoryId } : {}),
   };

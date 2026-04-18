@@ -11,6 +11,8 @@ import {
 import { ReviewTable } from "./ReviewTable";
 
 type ReviewDraft = {
+  merchant: string;
+  expenseCategory: ApiTransaction["expense_category"];
   spendCategoryId: number | null;
   reviewStatus: ApiTransaction["review_status"];
 };
@@ -28,10 +30,15 @@ export function ReviewQueuePage() {
     mutationFn: async (transactionId: number) => {
       const draft = drafts[transactionId];
 
-      return api.patch(`/transactions/${transactionId}`, buildReviewPayload({
-        reviewStatus: draft.reviewStatus,
-        spendCategoryId: draft.spendCategoryId,
-      }));
+      return api.patch(
+        `/transactions/${transactionId}`,
+        buildReviewPayload({
+          merchant: draft.merchant,
+          expenseCategory: draft.expenseCategory,
+          reviewStatus: draft.reviewStatus,
+          spendCategoryId: draft.spendCategoryId,
+        }),
+      );
     },
     onSuccess: () => {
       setFeedbackMessage("Saved review changes.");
@@ -46,6 +53,8 @@ export function ReviewQueuePage() {
     () =>
       expenses.reduce<Record<number, ReviewDraft>>((accumulator, expense) => {
         accumulator[expense.id] = drafts[expense.id] ?? {
+          merchant: expense.merchant,
+          expenseCategory: expense.expense_category,
           spendCategoryId: expense.spend_category_id,
           reviewStatus: expense.review_status,
         };
@@ -78,6 +87,8 @@ export function ReviewQueuePage() {
             ...currentDrafts,
             [transactionId]: {
               ...(currentDrafts[transactionId] ?? {
+                merchant: "",
+                expenseCategory: "common",
                 spendCategoryId: null,
                 reviewStatus: "needs_review",
               }),

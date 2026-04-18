@@ -70,4 +70,6 @@ class TransactionResponse(BaseModel):
     spend_category_id: int | None
     source_type: str
     review_status: str
+    duplicate_suspected: bool
+    duplicate_reason: str | None
     notes: str | None

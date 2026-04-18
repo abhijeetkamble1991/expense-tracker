@@ -2,7 +2,7 @@ import json
 from datetime import date
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, File, Form, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
@@ -13,6 +13,7 @@ from app.models.user import User
 from app.schemas.imports import ImportBatchRead
 from app.services.imports import find_duplicate_transaction, process_pdf_upload
 from app.services.merchant_rules import find_matching_rule
+from app.services.reports import is_valid_month_key
 
 router = APIRouter(prefix="/imports", tags=["imports"])
 
@@ -26,6 +27,11 @@ def upload_import(
     current_user: User = Depends(get_current_user),
 ) -> ImportBatch:
     _ = current_user
+    if not is_valid_month_key(month_key):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="month_key must match YYYY-MM",
+        )
     file_bytes = file.file.read()
     metadata, rows = process_pdf_upload(
         db=db,

@@ -5,6 +5,8 @@ import {
 } from "../month-workflow/workflow-data";
 
 type ReviewDraft = {
+  merchant: string;
+  expenseCategory: ApiTransaction["expense_category"];
   spendCategoryId: number | null;
   reviewStatus: ApiTransaction["review_status"];
 };
@@ -38,12 +40,15 @@ export function ReviewTable({
           <th scope="col">Expense Category</th>
           <th scope="col">Spend Category</th>
           <th scope="col">Status</th>
+          <th scope="col">Warning</th>
           <th scope="col">Action</th>
         </tr>
       </thead>
       <tbody>
         {expenses.map((expense) => {
           const draft = drafts[expense.id] ?? {
+            merchant: expense.merchant,
+            expenseCategory: expense.expense_category,
             spendCategoryId: expense.spend_category_id,
             reviewStatus: expense.review_status,
           };
@@ -51,8 +56,40 @@ export function ReviewTable({
           return (
             <tr key={expense.id}>
               <td>{expense.transaction_date}</td>
-              <td>{expense.merchant}</td>
-              <td>{formatExpenseCategory(expense.expense_category)}</td>
+              <td>
+                <label className="visually-hidden" htmlFor={`merchant-${expense.id}`}>
+                  Merchant {expense.id}
+                </label>
+                <input
+                  aria-label={`Merchant ${expense.id}`}
+                  id={`merchant-${expense.id}`}
+                  onChange={(event) =>
+                    onDraftChange(expense.id, {
+                      merchant: event.target.value,
+                    })
+                  }
+                  value={draft.merchant}
+                />
+              </td>
+              <td>
+                <label className="visually-hidden" htmlFor={`expense-category-${expense.id}`}>
+                  Expense category {expense.id}
+                </label>
+                <select
+                  aria-label={`Expense category ${expense.id}`}
+                  id={`expense-category-${expense.id}`}
+                  onChange={(event) =>
+                    onDraftChange(expense.id, {
+                      expenseCategory: event.target
+                        .value as ApiTransaction["expense_category"],
+                    })
+                  }
+                  value={draft.expenseCategory}
+                >
+                  <option value="common">Common</option>
+                  <option value="personal">Personal</option>
+                </select>
+              </td>
               <td>
                 <label className="visually-hidden" htmlFor={`spend-category-${expense.id}`}>
                   Spend category {expense.id}
@@ -96,6 +133,9 @@ export function ReviewTable({
                   <option value="reviewed">Reviewed</option>
                   <option value="flagged">Flagged</option>
                 </select>
+              </td>
+              <td>
+                {expense.duplicate_suspected ? expense.duplicate_reason : "None"}
               </td>
               <td>
                 <button

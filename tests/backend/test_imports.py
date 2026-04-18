@@ -137,6 +137,22 @@ def test_import_extracts_upi_transactions_from_real_pdf_bytes(
     ]
 
 
+def test_import_rejects_invalid_month_key(client, auth_headers):
+    statement_pdf = build_text_pdf(
+        ["09/04/2026 10/04/2026 SWIGGY ONLINE 550.00 DR"]
+    )
+
+    response = client.post(
+        "/imports",
+        headers=auth_headers,
+        data={"month_key": "2026/04", "source_type": "credit_card_pdf"},
+        files={"file": ("statement.pdf", statement_pdf, "application/pdf")},
+    )
+
+    assert response.status_code == 422
+    assert response.json() == {"detail": "month_key must match YYYY-MM"}
+
+
 def test_import_uses_raw_merchant_rule_for_spend_category_when_canonical_merchants_overlap(
     client,
     auth_headers,
