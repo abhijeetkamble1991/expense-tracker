@@ -9,7 +9,7 @@ test("report home renders month totals and needs-review count", () => {
     screen.getByRole("heading", { name: /april 2026 summary/i }),
   ).toBeInTheDocument();
   expect(screen.getByText("$4,280.45")).toBeInTheDocument();
-  expect(screen.getByText("12 expenses need review")).toBeInTheDocument();
+  expect(screen.getByText("3 expenses need review")).toBeInTheDocument();
   expect(
     screen.getByRole("heading", { name: /category chart/i }),
   ).toBeInTheDocument();
@@ -19,4 +19,7 @@ test("report home renders month totals and needs-review count", () => {
   expect(
     screen.getByRole("heading", { name: /detailed transactions/i }),
   ).toBeInTheDocument();
+  expect(screen.getByText("3 transactions")).toBeInTheDocument();
+  expect(screen.getByText("$1,120.00")).toBeInTheDocument();
+  expect(screen.getByText("Apr 14 • Software • Platform ops")).toBeInTheDocument();
 });

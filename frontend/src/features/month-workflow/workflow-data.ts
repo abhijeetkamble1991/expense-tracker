@@ -4,14 +4,22 @@ export type SummaryMetric = {
   tone?: "default" | "warning";
 };
 
-export type ReviewExpense = {
+type WorkflowTransaction = {
   id: string;
   date: string;
   merchant: string;
+  amount: number;
   expenseCategory: string;
   spendCategory: string;
+  source: "imported" | "manual";
   status: string;
+  needsReview: boolean;
 };
+
+export type ReviewExpense = Pick<
+  WorkflowTransaction,
+  "id" | "date" | "merchant" | "expenseCategory" | "spendCategory" | "status"
+>;
 
 export type CategoryAllocation = {
   category: string;
@@ -39,55 +47,116 @@ export type UploadBatch = {
   transactions: number;
 };
 
-const reportSummary: SummaryMetric[] = [
-  { label: "Month total", value: "$4,280.45" },
-  { label: "Imported expenses", value: "186" },
-  { label: "Expenses needing review", value: "12", tone: "warning" },
-  { label: "Manual entries", value: "8" },
-];
-
-const reviewExpenses: ReviewExpense[] = [
+const workflowTransactions: WorkflowTransaction[] = [
   {
     id: "rvw-102",
     date: "Apr 18",
     merchant: "Blue Tokai",
+    amount: 42.8,
     expenseCategory: "Meals",
     spendCategory: "Client delivery",
+    source: "imported",
     status: "Needs category check",
+    needsReview: true,
   },
   {
     id: "rvw-087",
     date: "Apr 16",
     merchant: "Uber",
+    amount: 18.35,
     expenseCategory: "Local Travel",
     spendCategory: "Field visits",
+    source: "imported",
     status: "Needs receipt",
+    needsReview: true,
   },
   {
     id: "rvw-075",
     date: "Apr 14",
     merchant: "AWS",
+    amount: 320,
     expenseCategory: "Software",
     spendCategory: "Platform ops",
+    source: "manual",
     status: "Needs split",
-  },
-];
-
-const spendByCategory: CategoryAllocation[] = [
-  {
-    category: "Software",
-    amount: "$1,680.00",
-    note: "Subscription renewals landed this month.",
+    needsReview: true,
   },
   {
-    category: "Travel",
-    amount: "$1,210.10",
-    note: "Two client visits are driving the increase.",
+    id: "txn-446",
+    date: "Apr 13",
+    merchant: "AWS",
+    amount: 400,
+    expenseCategory: "Software",
+    spendCategory: "Platform ops",
+    source: "imported",
+    status: "Ready",
+    needsReview: false,
   },
   {
-    category: "Meals",
-    amount: "$524.25",
-    note: "Mostly team lunches and airport meals.",
+    id: "txn-445",
+    date: "Apr 08",
+    merchant: "AWS",
+    amount: 400,
+    expenseCategory: "Software",
+    spendCategory: "Platform ops",
+    source: "imported",
+    status: "Ready",
+    needsReview: false,
+  },
+  {
+    id: "txn-452",
+    date: "Apr 11",
+    merchant: "Blue Tokai",
+    amount: 171.8,
+    expenseCategory: "Meals",
+    spendCategory: "Client delivery",
+    source: "manual",
+    status: "Ready",
+    needsReview: false,
+  },
+  {
+    id: "txn-456",
+    date: "Apr 09",
+    merchant: "Uber",
+    amount: 168.05,
+    expenseCategory: "Local Travel",
+    spendCategory: "Field visits",
+    source: "imported",
+    status: "Ready",
+    needsReview: false,
+  },
+  {
+    id: "txn-460",
+    date: "Apr 07",
+    merchant: "Stripe",
+    amount: 980.25,
+    expenseCategory: "Processing Fees",
+    spendCategory: "Revenue ops",
+    source: "imported",
+    status: "Ready",
+    needsReview: false,
+  },
+  {
+    id: "txn-463",
+    date: "Apr 05",
+    merchant: "Notion",
+    amount: 699.2,
+    expenseCategory: "Software",
+    spendCategory: "Back office",
+    source: "manual",
+    status: "Ready",
+    needsReview: false,
+  },
+  {
+    id: "txn-468",
+    date: "Apr 03",
+    merchant: "Delta",
+    amount: 1080,
+    expenseCategory: "Travel",
+    spendCategory: "Client delivery",
+    source: "imported",
+    status: "Ready",
+    needsReview: false,
   },
 ];
 
@@ -95,41 +164,14 @@ const uploadBatches: UploadBatch[] = [
   {
     vendor: "Corporate card CSV",
     status: "Imported",
-    receivedAt: "Today, 09:30",
+    receivedAt: "Apr 18, 2026 09:30",
     transactions: 48,
   },
   {
     vendor: "Bank statement PDF",
     status: "Ready for mapping",
-    receivedAt: "Yesterday, 18:10",
+    receivedAt: "Apr 17, 2026 18:10",
     transactions: 19,
-  },
-];
-
-const merchantSummary: MerchantSummary[] = [
-  { merchant: "AWS", total: "$1,120.00", transactionCount: 3 },
-  { merchant: "Blue Tokai", total: "$214.60", transactionCount: 5 },
-  { merchant: "Uber", total: "$186.40", transactionCount: 7 },
-];
-
-const detailedTransactions: DetailedTransaction[] = [
-  {
-    id: "txn-447",
-    merchant: "AWS",
-    amount: "$320.00",
-    detail: "Apr 14 • Software • Platform ops",
-  },
-  {
-    id: "txn-451",
-    merchant: "Blue Tokai",
-    amount: "$42.80",
-    detail: "Apr 18 • Meals • Client delivery",
-  },
-  {
-    id: "txn-455",
-    merchant: "Uber",
-    amount: "$18.35",
-    detail: "Apr 16 • Local Travel • Field visits",
   },
 ];
 
@@ -145,11 +187,128 @@ const manualEntryPrompts = [
   "Attach context so review can stay lightweight later.",
 ];
 
+const categoryNotes: Record<string, string> = {
+  Software: "Subscription renewals and tooling spend are concentrated here.",
+  Travel: "Client travel is the main driver this month.",
+  Meals: "Team lunches and client meetings are grouped here.",
+  "Local Travel": "Short-haul rides tied to field visits.",
+  "Processing Fees": "Payment platform costs linked to collections.",
+};
+
+function formatCurrency(amount: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(amount);
+}
+
+function parseCurrency(currency: string) {
+  return Number(currency.replace(/[$,]/g, ""));
+}
+
 export function useReportSummary() {
+  const reviewExpenses: ReviewExpense[] = workflowTransactions
+    .filter((transaction) => transaction.needsReview)
+    .map(({ id, date, merchant, expenseCategory, spendCategory, status }) => ({
+      id,
+      date,
+      merchant,
+      expenseCategory,
+      spendCategory,
+      status,
+    }));
+
+  const needsReviewCount = reviewExpenses.length;
+  const monthTotal = workflowTransactions.reduce(
+    (total, transaction) => total + transaction.amount,
+    0,
+  );
+  const importedExpenses = workflowTransactions.filter(
+    (transaction) => transaction.source === "imported",
+  ).length;
+  const manualEntries = workflowTransactions.filter(
+    (transaction) => transaction.source === "manual",
+  ).length;
+
+  const spendByCategory: CategoryAllocation[] = Object.values(
+    workflowTransactions.reduce<Record<string, CategoryAllocation>>(
+      (accumulator, transaction) => {
+        const existing = accumulator[transaction.expenseCategory];
+
+        if (existing) {
+          existing.amount = formatCurrency(
+            parseCurrency(existing.amount) + transaction.amount,
+          );
+          return accumulator;
+        }
+
+        accumulator[transaction.expenseCategory] = {
+          category: transaction.expenseCategory,
+          amount: formatCurrency(transaction.amount),
+          note:
+            categoryNotes[transaction.expenseCategory] ??
+            "Spend grouped for monthly reporting.",
+        };
+
+        return accumulator;
+      },
+      {},
+    ),
+  )
+    .sort((left, right) => parseCurrency(right.amount) - parseCurrency(left.amount))
+    .slice(0, 3);
+
+  const merchantSummary: MerchantSummary[] = Object.values(
+    workflowTransactions.reduce<Record<string, MerchantSummary>>(
+      (accumulator, transaction) => {
+        const existing = accumulator[transaction.merchant];
+
+        if (existing) {
+          existing.total = formatCurrency(
+            parseCurrency(existing.total) + transaction.amount,
+          );
+          existing.transactionCount += 1;
+          return accumulator;
+        }
+
+        accumulator[transaction.merchant] = {
+          merchant: transaction.merchant,
+          total: formatCurrency(transaction.amount),
+          transactionCount: 1,
+        };
+
+        return accumulator;
+      },
+      {},
+    ),
+  )
+    .sort((left, right) => parseCurrency(right.total) - parseCurrency(left.total))
+    .slice(0, 3);
+
+  const detailedTransactions: DetailedTransaction[] = workflowTransactions
+    .slice(0, 3)
+    .map((transaction) => ({
+      id: transaction.id,
+      merchant: transaction.merchant,
+      amount: formatCurrency(transaction.amount),
+      detail: `${transaction.date} • ${transaction.expenseCategory} • ${transaction.spendCategory}`,
+    }));
+
+  const metrics: SummaryMetric[] = [
+    { label: "Month total", value: formatCurrency(monthTotal) },
+    { label: "Imported expenses", value: String(importedExpenses) },
+    {
+      label: "Expenses needing review",
+      value: String(needsReviewCount),
+      tone: "warning",
+    },
+    { label: "Manual entries", value: String(manualEntries) },
+  ];
+
   return {
     monthLabel: "April 2026",
-    metrics: reportSummary,
-    needsReviewCount: 12,
+    metrics,
+    needsReviewCount,
     spendByCategory,
     merchantSummary,
     detailedTransactions,
@@ -157,9 +316,20 @@ export function useReportSummary() {
 }
 
 export function useReviewQueue() {
+  const expenses: ReviewExpense[] = workflowTransactions
+    .filter((transaction) => transaction.needsReview)
+    .map(({ id, date, merchant, expenseCategory, spendCategory, status }) => ({
+      id,
+      date,
+      merchant,
+      expenseCategory,
+      spendCategory,
+      status,
+    }));
+
   return {
-    expenses: reviewExpenses,
-    totalPending: reviewExpenses.length,
+    expenses,
+    totalPending: expenses.length,
   };
 }
 
