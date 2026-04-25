@@ -40,8 +40,11 @@ test("upload page posts a file import and renders the returned batch", async () 
   const user = userEvent.setup();
   const file = new File(["pdf"], "statement.pdf", { type: "application/pdf" });
 
-  await user.type(screen.getByLabelText("Month"), "2026-04");
-  await user.selectOptions(screen.getByLabelText("Source type"), "credit_card_pdf");
+  expect(screen.queryByLabelText("Month")).not.toBeInTheDocument();
+  expect(
+    screen.getByRole("option", { name: /bank statement/i }),
+  ).toHaveValue("bank_statement_pdf");
+  await user.selectOptions(screen.getByLabelText("Source type"), "bank_statement_pdf");
   await user.upload(screen.getByLabelText("Statement file"), file);
   await user.click(screen.getByRole("button", { name: /upload import/i }));
 
@@ -54,6 +57,10 @@ test("upload page posts a file import and renders the returned batch", async () 
       }),
     ),
   );
+  const formData = mockedApi.post.mock.calls[0]?.[1] as FormData;
+  expect(formData.get("source_type")).toBe("bank_statement_pdf");
+  expect(formData.get("month_key")).toBeNull();
   expect(await screen.findByText("statement.pdf")).toBeInTheDocument();
+  expect(screen.getByText(/detected month: 2026-04/i)).toBeInTheDocument();
   expect(screen.getByText(/4 transactions extracted/i)).toBeInTheDocument();
 });

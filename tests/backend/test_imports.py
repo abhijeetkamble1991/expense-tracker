@@ -11,14 +11,14 @@ from tests.backend.pdf_factory import build_text_pdf
 def test_create_import_batch(client, auth_headers, monkeypatch):
     from app.services.imports import NormalizedImportRow
 
-    def fake_process_pdf_upload(*, db, file_bytes, filename, month_key, source_type):
+    def fake_process_pdf_upload(*, db, file_bytes, filename, source_type):
         _ = db
         _ = file_bytes
         _ = filename
-        _ = month_key
         _ = source_type
         return (
             {
+                "month_key": "2026-04",
                 "source_type": "credit_card_pdf",
                 "parser_type": "credit_card",
                 "parse_status": "success",
@@ -37,6 +37,7 @@ def test_create_import_batch(client, auth_headers, monkeypatch):
                     expense_category="personal",
                     review_status="needs_review",
                     source_reference="txn-001",
+                    transaction_time=None,
                 )
             ],
         )
@@ -49,12 +50,13 @@ def test_create_import_batch(client, auth_headers, monkeypatch):
     response = client.post(
         "/imports",
         headers=auth_headers,
-        data={"month_key": "2026-04", "source_type": "credit_card_pdf"},
+        data={"source_type": "credit_card_pdf"},
         files={"file": ("statement.pdf", b"%PDF-1.4 fake", "application/pdf")},
     )
 
     assert response.status_code == 201
     body = response.json()
+    assert body["month_key"] == "2026-04"
     assert body["parse_status"] == "success"
     assert body["extracted_count"] == 1
 
@@ -76,12 +78,13 @@ def test_import_extracts_credit_card_transactions_from_real_pdf_bytes(
     response = client.post(
         "/imports",
         headers=auth_headers,
-        data={"month_key": "2026-04", "source_type": "credit_card_pdf"},
+        data={"source_type": "credit_card_pdf"},
         files={"file": ("statement.pdf", statement_pdf, "application/pdf")},
     )
 
     assert response.status_code == 201
     body = response.json()
+    assert body["month_key"] == "2026-04"
     assert body["parse_status"] == "success"
     assert body["extracted_count"] == 2
 
@@ -115,12 +118,13 @@ def test_import_extracts_upi_transactions_from_real_pdf_bytes(
     response = client.post(
         "/imports",
         headers=auth_headers,
-        data={"month_key": "2026-04", "source_type": "upi_pdf"},
+        data={"source_type": "upi_pdf"},
         files={"file": ("upi-statement.pdf", statement_pdf, "application/pdf")},
     )
 
     assert response.status_code == 201
     body = response.json()
+    assert body["month_key"] == "2026-04"
     assert body["parse_status"] == "success"
     assert body["extracted_count"] == 2
 
@@ -137,20 +141,153 @@ def test_import_extracts_upi_transactions_from_real_pdf_bytes(
     ]
 
 
-def test_import_rejects_invalid_month_key(client, auth_headers):
+def test_import_extracts_bank_statement_debit_transactions_from_real_pdf_bytes(
+    client,
+    auth_headers,
+):
     statement_pdf = build_text_pdf(
-        ["09/04/2026 10/04/2026 SWIGGY ONLINE 550.00 DR"]
+        [
+            "Statement of Axis Account No: 921010037957541 for the period (From: 19-01-2026  To: 19-04-2026)",
+            "Tran Date Chq No Particulars Debit Credit Balance Init.",
+            "Br",
+            "OPENING BALANCE            14948.84",
+            "19-01-2026",
+            "MOB/SELFFT/915010052853322/915010052853",
+            "322",
+            "3645.00             11303.84 073",
+            "21-01-2026",
+            "UPI/P2M/817827336319/URBAN COMPANY",
+            "/UPIInt/HDFC BANK LTD",
+            "1288.00             10015.84 073",
+            "27-01-2026",
+            "UPI/P2A/709647202195/SHARAYU",
+            "R/HDFC/Monthly/",
+            "25000.00             35015.84 073",
+            "23-01-2026",
+            "UPI/P2M/184106488449/ZOMATO",
+            "/Paymen/HDFC BANK LTD",
+            "526.40              34489.44 073",
+            "18-04-2026",
+            "MOB/SELFFT/915010052853322/915010052853",
+            "322",
+            "7407.00              27082.44 073",
+        ]
     )
 
     response = client.post(
         "/imports",
         headers=auth_headers,
-        data={"month_key": "2026/04", "source_type": "credit_card_pdf"},
+        data={"source_type": "bank_statement_pdf"},
+        files={"file": ("bank-statement.pdf", statement_pdf, "application/pdf")},
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["source_type"] == "bank_statement_pdf"
+    assert body["parse_status"] == "success"
+    assert body["extracted_count"] == 4
+
+    with Session(get_engine()) as db:
+        imported_transactions = db.scalars(
+            select(Transaction)
+            .where(Transaction.import_batch_id == body["id"])
+            .order_by(Transaction.id)
+        ).all()
+
+    assert [transaction.merchant for transaction in imported_transactions] == [
+        "MOB/SELFFT/915010052853322/915010052853/322",
+        "URBAN COMPANY",
+        "ZOMATO",
+        "MOB/SELFFT/915010052853322/915010052853/322",
+    ]
+
+
+def test_import_extracts_phonepe_upi_transactions_from_real_pdf_bytes(
+    client,
+    auth_headers,
+):
+    statement_pdf = build_text_pdf(
+        [
+            "Transaction Statement for +919028308428",
+            "Mar 20, 2026 - Apr 19, 2026",
+            "Date Transaction Details Type Amount",
+            "Mar 20, 2026",
+            "07:05 PM",
+            "Paid to THE LIQUOR STORY 2",
+            "Transaction ID : T2603201905499312518350",
+            "UTR No : 234799728118",
+            "Debited from XX3322",
+            "Debit INR 340.00",
+            "Mar 20, 2026",
+            "07:06 PM",
+            "Paid to Vishal Wines Shop",
+            "Transaction ID : T2603201906528032199746",
+            "UTR No : 320046592500",
+            "Debited from XX3322",
+            "Debit INR 30.00",
+            "Mar 21, 2026",
+            "12:35 AM",
+            "Received from AMOL BHIMRAO SELOKAR",
+            "Transaction ID : T2603210035449245561565",
+            "UTR No : 644621652235",
+            "Credited to XX3322",
+            "Credit INR 200.00",
+        ]
+    )
+
+    response = client.post(
+        "/imports",
+        headers=auth_headers,
+        data={"source_type": "upi_pdf"},
+        files={"file": ("phonepe-upi-statement.pdf", statement_pdf, "application/pdf")},
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["month_key"] == "2026-03"
+    assert body["parse_status"] == "success"
+    assert body["extracted_count"] == 2
+
+    with Session(get_engine()) as db:
+        imported_transactions = db.scalars(
+            select(Transaction)
+            .where(Transaction.import_batch_id == body["id"])
+            .order_by(Transaction.transaction_date, Transaction.id)
+        ).all()
+
+    assert [transaction.merchant for transaction in imported_transactions] == [
+        "THE LIQUOR STORY 2",
+        "Vishal Wines Shop",
+    ]
+    assert [transaction.transaction_time for transaction in imported_transactions] == [
+        "07:05 PM",
+        "07:06 PM",
+    ]
+
+
+def test_import_marks_batch_with_detected_primary_month_when_statement_spans_multiple_months(
+    client,
+    auth_headers,
+):
+    statement_pdf = build_text_pdf(
+        [
+            "Credit Card Statement",
+            "Txn Date Post Date Description Amount Type",
+            "30/03/2026 31/03/2026 TRAIN TICKET 800.00 DR",
+            "02/04/2026 03/04/2026 SWIGGY ONLINE 550.00 DR",
+            "09/04/2026 10/04/2026 AMAZON PAY INDIA 1299.99 DR",
+        ]
+    )
+
+    response = client.post(
+        "/imports",
+        headers=auth_headers,
+        data={"source_type": "credit_card_pdf"},
         files={"file": ("statement.pdf", statement_pdf, "application/pdf")},
     )
 
-    assert response.status_code == 422
-    assert response.json() == {"detail": "month_key must match YYYY-MM"}
+    assert response.status_code == 201
+    assert response.json()["month_key"] == "2026-04"
 
 
 def test_import_uses_raw_merchant_rule_for_spend_category_when_canonical_merchants_overlap(
@@ -210,7 +347,7 @@ def test_import_uses_raw_merchant_rule_for_spend_category_when_canonical_merchan
     response = client.post(
         "/imports",
         headers=auth_headers,
-        data={"month_key": "2026-04", "source_type": "credit_card_pdf"},
+        data={"source_type": "credit_card_pdf"},
         files={"file": ("statement.pdf", b"%PDF-1.4 fake", "application/pdf")},
     )
 
@@ -285,7 +422,7 @@ def test_import_does_not_guess_spend_category_for_ambiguous_canonical_merchant(
     response = client.post(
         "/imports",
         headers=auth_headers,
-        data={"month_key": "2026-04", "source_type": "credit_card_pdf"},
+        data={"source_type": "credit_card_pdf"},
         files={"file": ("statement.pdf", b"%PDF-1.4 fake", "application/pdf")},
     )
 

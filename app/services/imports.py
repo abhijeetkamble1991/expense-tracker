@@ -1,3 +1,4 @@
+from collections import Counter
 from collections.abc import Callable
 from datetime import date
 from decimal import Decimal
@@ -12,6 +13,7 @@ from app.services.merchant_rules import find_matching_rule, merchant_key
 from app.services.parsers import (
     NormalizedImportRow,
     ParsedRow,
+    parse_bank_statement_text,
     normalize_parsed_row,
     parse_credit_card_statement_text,
     parse_upi_statement_text,
@@ -77,13 +79,33 @@ def _select_parser(
 ) -> tuple[str, str, ParserFn]:
     if source_type == "upi_pdf":
         return "upi_pdf", "upi", parse_upi_statement_text
+    if source_type == "bank_statement_pdf":
+        return "bank_statement_pdf", "bank_statement", parse_bank_statement_text
     if source_type == "credit_card_pdf":
         return "credit_card_pdf", "credit_card", parse_credit_card_statement_text
 
     normalized_filename = filename.lower()
     if "upi" in normalized_filename:
         return "upi_pdf", "upi", parse_upi_statement_text
+    if "statement" in normalized_filename or "acctstatement" in normalized_filename:
+        return "bank_statement_pdf", "bank_statement", parse_bank_statement_text
     return "credit_card_pdf", "credit_card", parse_credit_card_statement_text
+
+
+def _detect_batch_month_key(rows: list[NormalizedImportRow]) -> tuple[str, list[str]]:
+    warnings: list[str] = []
+    if not rows:
+        return date.today().strftime("%Y-%m"), warnings
+
+    month_counts = Counter(row.month_key for row in rows)
+    detected_month = max(month_counts.items(), key=lambda item: (item[1], item[0]))[0]
+
+    if len(month_counts) > 1:
+        warnings.append(
+            f"Statement spans multiple months; batch grouped under {detected_month}."
+        )
+
+    return detected_month, warnings
 
 
 def process_pdf_upload(
@@ -91,7 +113,6 @@ def process_pdf_upload(
     db: Session,
     file_bytes: bytes,
     filename: str,
-    month_key: str,
     source_type: str | None = None,
 ) -> tuple[dict[str, str | list[str]], list[NormalizedImportRow]]:
     warnings: list[str] = []
@@ -106,7 +127,6 @@ def process_pdf_upload(
     rows = [
         normalize_parsed_row(
             row=parsed_row,
-            month_key=month_key,
             source_type=effective_source_type,
         )
         for parsed_row in parsed_rows
@@ -122,7 +142,10 @@ def process_pdf_upload(
     parse_status = "success" if rows else "parse_failed"
     if parse_status == "parse_failed":
         warnings.append("No transactions matched the selected parser.")
+    month_key, month_warnings = _detect_batch_month_key(rows)
+    warnings.extend(month_warnings)
     metadata: dict[str, str | list[str]] = {
+        "month_key": month_key,
         "source_type": effective_source_type,
         "parser_type": parser_type,
         "parse_status": parse_status,

@@ -13,9 +13,18 @@ class SpendCategoryCreate(BaseModel):
         return trimmed
 
 
+class SpendCategoryUpdate(SpendCategoryCreate):
+    pass
+
+
 class SpendCategoryResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
     name: str
     is_active: bool
+
+
+class SpendCategoryDeleteResponse(BaseModel):
+    deleted_id: int
+    moved_to_review_count: int

@@ -12,6 +12,7 @@ class Transaction(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     transaction_date: Mapped[date] = mapped_column(Date, nullable=False)
+    transaction_time: Mapped[str | None] = mapped_column(String(10))
     posted_date: Mapped[date | None] = mapped_column(Date)
     amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
@@ -27,6 +28,12 @@ class Transaction(Base):
     expense_category: Mapped[str] = mapped_column(String(20), nullable=False)
     spend_category_id: Mapped[int | None] = mapped_column(ForeignKey("spend_categories.id"))
     import_batch_id: Mapped[int | None] = mapped_column(ForeignKey("import_batches.id"))
+    reimburse: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        server_default="0",
+        nullable=False,
+    )
     review_status: Mapped[str] = mapped_column(
         String(20),
         default="reviewed",

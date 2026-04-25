@@ -30,22 +30,30 @@ def regenerate_report(
             detail="month_key must match YYYY-MM",
         )
 
-    transactions = list(
+    all_transactions = list(
         db.scalars(
             select(Transaction)
             .where(Transaction.month_key == month_key)
             .order_by(Transaction.transaction_date, Transaction.id)
         )
     )
-    if not transactions:
+    if not all_transactions:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No transactions found for month",
         )
+    reviewed_transactions = [
+        transaction
+        for transaction in all_transactions
+        if transaction.review_status == "reviewed"
+    ]
+    unresolved_count = sum(
+        1 for transaction in all_transactions if transaction.review_status != "reviewed"
+    )
 
     spend_category_ids = {
         transaction.spend_category_id
-        for transaction in transactions
+        for transaction in reviewed_transactions
         if transaction.spend_category_id is not None
     }
     spend_category_names_by_id = {}
@@ -58,17 +66,18 @@ def regenerate_report(
         }
 
     summary = build_month_report(
-        transactions,
+        reviewed_transactions,
         spend_category_names_by_id=spend_category_names_by_id,
     )
     upsert_monthly_report_snapshot(
         db,
         month_key=month_key,
-        transactions=transactions,
+        unresolved_count=unresolved_count,
         summary=summary,
     )
     return MonthlyReportResponse(
         month_key=month_key,
-        transactions=transactions,
+        unresolved_count=unresolved_count,
+        transactions=reviewed_transactions,
         **summary,
     )

@@ -2,7 +2,7 @@ import json
 from datetime import date
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
@@ -13,33 +13,26 @@ from app.models.user import User
 from app.schemas.imports import ImportBatchRead
 from app.services.imports import find_duplicate_transaction, process_pdf_upload
 from app.services.merchant_rules import find_matching_rule
-from app.services.reports import is_valid_month_key
 
 router = APIRouter(prefix="/imports", tags=["imports"])
 
 
 @router.post("", response_model=ImportBatchRead, status_code=status.HTTP_201_CREATED)
 def upload_import(
-    month_key: str = Form(...),
     source_type: str | None = Form(default=None),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> ImportBatch:
     _ = current_user
-    if not is_valid_month_key(month_key):
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="month_key must match YYYY-MM",
-        )
     file_bytes = file.file.read()
     metadata, rows = process_pdf_upload(
         db=db,
         file_bytes=file_bytes,
         filename=file.filename or "statement.pdf",
-        month_key=month_key,
         source_type=source_type,
     )
+    month_key = str(metadata["month_key"])
 
     batch = ImportBatch(
         month_key=month_key,
@@ -60,6 +53,7 @@ def upload_import(
         duplicate = find_duplicate_transaction(db, incoming=row)
         transaction = Transaction(
             transaction_date=date.fromisoformat(row.transaction_date),
+            transaction_time=row.transaction_time,
             posted_date=date.fromisoformat(row.posted_date) if row.posted_date else None,
             amount=Decimal(row.amount),
             description=row.description,

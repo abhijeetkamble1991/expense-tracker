@@ -13,6 +13,7 @@ class ManualTransactionCreate(BaseModel):
     month_key: str
     expense_category: Literal["common", "personal"]
     spend_category_id: int
+    reimburse: bool = False
     notes: str | None = None
 
     @field_validator("description", "merchant")
@@ -54,6 +55,8 @@ class ManualTransactionCreate(BaseModel):
         expected_month_key = self.transaction_date.strftime("%Y-%m")
         if self.month_key != expected_month_key:
             raise ValueError("month_key must match transaction_date")
+        if self.reimburse and self.expense_category != "common":
+            raise ValueError("reimburse can only be enabled for common expenses")
         return self
 
 
@@ -62,14 +65,20 @@ class TransactionResponse(BaseModel):
 
     id: int
     transaction_date: date
+    transaction_time: str | None = None
     amount: Decimal
     description: str
     merchant: str
     month_key: str
     expense_category: Literal["common", "personal"]
     spend_category_id: int | None
+    reimburse: bool
     source_type: str
     review_status: str
     duplicate_suspected: bool
     duplicate_reason: str | None
     notes: str | None
+
+
+class TransactionDeleteResponse(BaseModel):
+    deleted_id: int

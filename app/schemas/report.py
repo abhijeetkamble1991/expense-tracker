@@ -10,6 +10,7 @@ class MonthlyReportResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     month_key: str
+    unresolved_count: int
     totals: dict[str, str]
     by_source: dict[str, str]
     by_merchant: dict[str, str]

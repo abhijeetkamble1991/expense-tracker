@@ -10,7 +10,11 @@ from app.db.session import get_db
 from app.models.spend_category import SpendCategory
 from app.models.transaction import Transaction
 from app.models.user import User
-from app.schemas.transaction import ManualTransactionCreate, TransactionResponse
+from app.schemas.transaction import (
+    ManualTransactionCreate,
+    TransactionDeleteResponse,
+    TransactionResponse,
+)
 from app.services.merchant_rules import upsert_merchant_rule
 
 router = APIRouter(prefix="/transactions", tags=["transactions"])
@@ -20,6 +24,7 @@ class TransactionReviewUpdate(BaseModel):
     merchant: str | None = None
     expense_category: Literal["common", "personal"] | None = None
     spend_category_id: int | None = None
+    reimburse: bool | None = None
     review_status: Literal["needs_review", "reviewed", "flagged"] | None = None
 
     @field_validator("merchant")
@@ -125,11 +130,27 @@ def update_transaction_review(
     for field_name, value in updates.items():
         setattr(transaction, field_name, value)
 
+    if transaction.expense_category != "common":
+        transaction.reimburse = False
+    elif updates.get("reimburse") and transaction.expense_category != "common":
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Reimburse can only be enabled for common expenses",
+        )
+
     if transaction.review_status == "reviewed" and transaction.spend_category_id is None:
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Reviewed transactions require a spend category",
+        )
+
+    if transaction.reimburse and transaction.expense_category != "common":
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Reimburse can only be enabled for common expenses",
         )
 
     if (
@@ -139,6 +160,7 @@ def update_transaction_review(
         "merchant",
         "expense_category",
         "spend_category_id",
+        "reimburse",
         "review_status",
     } & updates.keys()
     ):
@@ -153,3 +175,22 @@ def update_transaction_review(
     db.commit()
     db.refresh(transaction)
     return transaction
+
+
+@router.delete("/{transaction_id}", response_model=TransactionDeleteResponse)
+def delete_transaction(
+    transaction_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> TransactionDeleteResponse:
+    _ = current_user
+    transaction = db.scalar(select(Transaction).where(Transaction.id == transaction_id))
+    if transaction is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Transaction not found",
+        )
+
+    db.delete(transaction)
+    db.commit()
+    return TransactionDeleteResponse(deleted_id=transaction_id)

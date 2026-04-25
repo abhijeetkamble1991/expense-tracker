@@ -10,7 +10,6 @@ def test_normalize_parsed_row_marks_imported_expense_for_review():
 
     normalized = normalize_parsed_row(
         row=row,
-        month_key="2026-04",
         source_type="credit_card_pdf",
     )
 
@@ -18,5 +17,7 @@ def test_normalize_parsed_row_marks_imported_expense_for_review():
     assert normalized.expense_category == "personal"
     assert normalized.source_type == "credit_card_pdf"
     assert normalized.transaction_date == "2026-04-09"
+    assert normalized.month_key == "2026-04"
     assert normalized.posted_date == "2026-04-10"
+    assert normalized.transaction_time is None
     assert normalized.merchant == "SWIGGY ONLINE"

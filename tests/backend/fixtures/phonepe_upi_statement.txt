@@ -1,0 +1,26 @@
+Transaction Statement for +919028308428
+Mar 20, 2026 - Apr 19, 2026
+Date Transaction Details Type Amount
+Mar 20, 2026
+07:05 PM
+Paid to THE LIQUOR STORY 2
+Transaction ID : T2603201905499312518350
+UTR No : 234799728118
+Debited from XX3322
+Debit INR 340.00
+Mar 20, 2026
+07:06 PM
+Paid to Vishal Wines Shop
+Transaction ID : T2603201906528032199746
+UTR No : 320046592500
+Debited from XX3322
+Debit INR 30.00
+Mar 21, 2026
+12:35 AM
+Received from AMOL BHIMRAO SELOKAR
+Transaction ID : T2603210035449245561565
+UTR No : 644621652235
+Credited to XX3322
+Credit INR 200.00
+Page 1 of 15
+This is a system generated statement. For any queries, contact us at .https://support.phonepe.com/statement

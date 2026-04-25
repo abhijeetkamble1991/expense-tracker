@@ -29,6 +29,8 @@ def build_month_report(
         "overall": Decimal("0.00"),
         "common": Decimal("0.00"),
         "personal": Decimal("0.00"),
+        "common_reimburse": Decimal("0.00"),
+        "personal_reimburse": Decimal("0.00"),
     }
     spend_category_names_by_id = spend_category_names_by_id or {}
     by_spend_category: defaultdict[str, Decimal] = defaultdict(lambda: Decimal("0.00"))
@@ -38,6 +40,8 @@ def build_month_report(
     for transaction in transactions:
         totals["overall"] += transaction.amount
         totals[transaction.expense_category] += transaction.amount
+        if transaction.reimburse:
+            totals[f"{transaction.expense_category}_reimburse"] += transaction.amount
         by_source[transaction.source_type] += transaction.amount
         by_merchant[transaction.merchant] += transaction.amount
         if transaction.spend_category_id is not None:
@@ -99,14 +103,10 @@ def upsert_monthly_report_snapshot(
     db: Session,
     *,
     month_key: str,
-    transactions: list[Transaction],
+    unresolved_count: int,
     summary: dict[str, dict[str, str]],
 ) -> MonthlyReport:
     ensure_monthly_report_compatibility(db)
-
-    unresolved_count = sum(
-        1 for transaction in transactions if transaction.review_status != "reviewed"
-    )
     monthly_report = db.scalar(
         select(MonthlyReport).where(MonthlyReport.month_key == month_key)
     )

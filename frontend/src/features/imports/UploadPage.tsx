@@ -4,9 +4,14 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../lib/api";
 import { ImportBatch } from "../month-workflow/workflow-data";
 
+const SOURCE_OPTIONS = [
+  { value: "credit_card_pdf", label: "Credit card statement" },
+  { value: "upi_pdf", label: "UPI statement" },
+  { value: "bank_statement_pdf", label: "Bank statement" },
+];
+
 export function UploadPage() {
   const queryClient = useQueryClient();
-  const [monthKey, setMonthKey] = useState("");
   const [sourceType, setSourceType] = useState("credit_card_pdf");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadedBatch, setUploadedBatch] = useState<ImportBatch | null>(null);
@@ -15,7 +20,6 @@ export function UploadPage() {
   const mutation = useMutation({
     mutationFn: async () => {
       const formData = new FormData();
-      formData.append("month_key", monthKey);
       formData.append("source_type", sourceType);
       if (selectedFile) {
         formData.append("file", selectedFile);
@@ -53,21 +57,16 @@ export function UploadPage() {
 
       <form className="workflow-form" noValidate onSubmit={handleSubmit}>
         <label className="field">
-          Month
-          <input
-            onChange={(event) => setMonthKey(event.target.value)}
-            required
-            value={monthKey}
-          />
-        </label>
-        <label className="field">
           Source type
           <select
             onChange={(event) => setSourceType(event.target.value)}
             value={sourceType}
           >
-            <option value="credit_card_pdf">credit_card_pdf</option>
-            <option value="upi_pdf">upi_pdf</option>
+            {SOURCE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
           </select>
         </label>
         <label className="field field--full">
@@ -93,6 +92,7 @@ export function UploadPage() {
           <article className="stack-list__item">
             <div>
               <h3>{uploadedBatch.original_filename}</h3>
+              <p>Detected month: {uploadedBatch.month_key}</p>
               <p>{uploadedBatch.extracted_count} transactions extracted</p>
               {uploadedBatch.warnings.length > 0 ? (
                 <p>{uploadedBatch.warnings.join(" • ")}</p>

@@ -10,3 +10,4 @@ class ParsedRow:
     merchant_guess: str
     direction: str
     source_reference: str | None
+    transaction_time: str | None = None
