@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "expense-tracker"
+version = "0.1.0"
+description = "Monthly expense tracker with PDF import and reporting"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+  "fastapi>=0.115.0",
+  "uvicorn>=0.30.0",
+  "httpx>=0.28.0",
+  "pytest>=8.3.0",
+  "pypdf>=5.0.0",
+  "psycopg[binary]>=3.2.0",
+  "sqlalchemy>=2.0.0",
+  "pydantic-settings>=2.6.0",
+  "PyJWT>=2.9.0",
+  "python-multipart>=0.0.20",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests/backend"]
+addopts = "-q"
+
+[tool.setuptools.packages.find]
+include = ["app*"]

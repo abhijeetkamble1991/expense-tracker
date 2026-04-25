@@ -8,6 +8,10 @@ wheels/
 
 # Virtual environments
 .venv
+*.tsbuildinfo
 
 .superpowers/
 .worktrees/
+frontend/node_modules/
+frontend/playwright-report/
+frontend/test-results/
