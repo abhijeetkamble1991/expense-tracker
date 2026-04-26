@@ -1,24 +1,80 @@
 from collections.abc import Generator
 from functools import lru_cache
+from ssl import create_default_context
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import Session
+from sqlalchemy.pool import NullPool
 
 from app.core.config import settings
 from app.db.base import Base
 
 
-@lru_cache
-def get_engine():
+def _create_engine():
     connect_args = {}
-    if settings.database_url.startswith("sqlite"):
+    database_url = settings.database_url
+
+    if database_url.startswith("sqlite"):
         connect_args["check_same_thread"] = False
-    return create_engine(settings.database_url, connect_args=connect_args)
+    elif database_url.startswith("postgresql+pg8000://"):
+        parsed_url = urlsplit(database_url)
+        filtered_query = []
+        sslmode = None
+
+        for key, value in parse_qsl(parsed_url.query, keep_blank_values=True):
+            if key == "sslmode":
+                sslmode = value
+            else:
+                filtered_query.append((key, value))
+
+        if sslmode in {"require", "prefer", "verify-ca", "verify-full"}:
+            connect_args["ssl_context"] = create_default_context()
+
+        if sslmode is not None:
+            database_url = urlunsplit(
+                (
+                    parsed_url.scheme,
+                    parsed_url.netloc,
+                    parsed_url.path,
+                    urlencode(filtered_query),
+                    parsed_url.fragment,
+                )
+            )
+
+    if settings.worker_runtime:
+        return create_engine(
+            database_url,
+            connect_args=connect_args,
+            poolclass=NullPool,
+        )
+    return create_engine(database_url, connect_args=connect_args)
+
+
+@lru_cache
+def _get_cached_engine():
+    return _create_engine()
+
+
+def reset_engine() -> None:
+    _get_cached_engine.cache_clear()
+
+
+def get_engine():
+    if settings.worker_runtime:
+        return _create_engine()
+    return _get_cached_engine()
+
+
+get_engine.cache_clear = reset_engine
 
 
 def get_db() -> Generator[Session, None, None]:
-    with Session(get_engine()) as db:
+    engine = get_engine()
+    with Session(engine) as db:
         yield db
+    if settings.worker_runtime:
+        engine.dispose()
 
 
 def _migrate_sqlite_schema(engine) -> None:

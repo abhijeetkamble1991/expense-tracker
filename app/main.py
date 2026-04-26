@@ -15,13 +15,19 @@ from app.db.session import init_db
 
 
 @asynccontextmanager
-async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+async def init_db_lifespan(_: FastAPI) -> AsyncIterator[None]:
     init_db()
     yield
 
 
-def create_app() -> FastAPI:
-    app = FastAPI(title="Expense Tracker API", lifespan=lifespan)
+@asynccontextmanager
+async def noop_lifespan(_: FastAPI) -> AsyncIterator[None]:
+    yield
+
+
+def create_app(*, auto_init_db: bool = True) -> FastAPI:
+    selected_lifespan = init_db_lifespan if auto_init_db else noop_lifespan
+    app = FastAPI(title="Expense Tracker API", lifespan=selected_lifespan)
     app.include_router(auth_router)
     app.include_router(health_router)
     app.include_router(imports_router)

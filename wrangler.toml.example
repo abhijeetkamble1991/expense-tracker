@@ -1,0 +1,13 @@
+name = "expense-tracker-api"
+main = "worker.py"
+compatibility_date = "2026-04-25"
+compatibility_flags = ["python_workers"]
+
+[[hyperdrive]]
+binding = "HYPERDRIVE"
+id = "<your-hyperdrive-id>"
+localConnectionString = "postgres://postgres:password@db.example.com:5432/postgres?sslmode=require"
+
+[vars]
+EXPENSE_TRACKER_ACCESS_TOKEN_MINUTES = "60"
+EXPENSE_TRACKER_BOOTSTRAP_USERNAME = "owner"
