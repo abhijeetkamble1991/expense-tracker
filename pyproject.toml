@@ -19,6 +19,7 @@ dependencies = [
   "pydantic-settings>=2.6.0",
   "PyJWT>=2.9.0",
   "python-multipart>=0.0.20",
+  "pywrangler>=0.0.2",
 ]
 
 [tool.pytest.ini_options]

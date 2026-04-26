@@ -1,0 +1,9 @@
+{
+  "name": "expense-tracker",
+  "main": "worker.py",
+  "compatibility_flags": [
+    "python_workers"
+  ],
+  // Set this to today's date
+  "compatibility_date": "2026-04-25"
+}
