@@ -1,13 +1,16 @@
 import { expect, test } from "@playwright/test";
 
+import {
+  bootstrapPassword,
+  bootstrapUsername,
+} from "../../src/test/bootstrap-credentials";
+
 test("user can sign in and land on the monthly report", async ({
   page,
   request,
 }) => {
-  const username =
-    process.env.EXPENSE_TRACKER_BOOTSTRAP_USERNAME ?? "owner";
-  const password =
-    process.env.EXPENSE_TRACKER_BOOTSTRAP_PASSWORD ?? "secret123";
+  const username = bootstrapUsername;
+  const password = bootstrapPassword;
   const backendUrl = "http://127.0.0.1:8000";
   const categoryName = `Smoke Category ${Date.now()}`;
 

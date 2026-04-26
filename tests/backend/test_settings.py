@@ -1,9 +1,14 @@
+from app.core.config import settings
+
+UPDATED_BOOTSTRAP_PASSWORD = f"{settings.bootstrap_password}-updated"
+
+
 def test_get_settings_returns_profile_and_default_currency(client, auth_headers):
     response = client.get("/settings", headers=auth_headers)
 
     assert response.status_code == 200
-    assert response.json()["username"] == "owner"
-    assert response.json()["display_name"] == "Owner"
+    assert response.json()["username"] == settings.bootstrap_username
+    assert response.json()["display_name"] == settings.bootstrap_username.title()
     assert response.json()["currency_code"] == "USD"
 
 
@@ -39,8 +44,8 @@ def test_change_password_updates_login_credentials(client, auth_headers):
         "/settings/password",
         headers=auth_headers,
         json={
-            "current_password": "secret123",
-            "new_password": "newsecret123",
+            "current_password": settings.bootstrap_password,
+            "new_password": UPDATED_BOOTSTRAP_PASSWORD,
         },
     )
 
@@ -49,13 +54,19 @@ def test_change_password_updates_login_credentials(client, auth_headers):
 
     old_login = client.post(
         "/auth/login",
-        json={"username": "owner", "password": "secret123"},
+        json={
+            "username": settings.bootstrap_username,
+            "password": settings.bootstrap_password,
+        },
     )
     assert old_login.status_code == 401
 
     new_login = client.post(
         "/auth/login",
-        json={"username": "owner", "password": "newsecret123"},
+        json={
+            "username": settings.bootstrap_username,
+            "password": UPDATED_BOOTSTRAP_PASSWORD,
+        },
     )
     assert new_login.status_code == 200
 
@@ -66,7 +77,7 @@ def test_change_password_rejects_wrong_current_password(client, auth_headers):
         headers=auth_headers,
         json={
             "current_password": "wrong-password",
-            "new_password": "newsecret123",
+            "new_password": UPDATED_BOOTSTRAP_PASSWORD,
         },
     )
 

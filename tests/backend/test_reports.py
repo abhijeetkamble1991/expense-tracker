@@ -186,7 +186,10 @@ def test_regenerate_report_upgrades_legacy_monthly_reports_table_and_stores_snap
     with TestClient(create_app()) as client:
         auth_response = client.post(
             "/auth/login",
-            json={"username": "owner", "password": "secret123"},
+            json={
+                "username": settings.bootstrap_username,
+                "password": settings.bootstrap_password,
+            },
         )
         assert auth_response.status_code == 200
         auth_headers = {

@@ -22,18 +22,18 @@ def normalize_database_url(database_url: str) -> str:
 
 
 class Settings(BaseSettings):
-    database_url: str = "sqlite:///./expense_tracker.db"
-    jwt_secret: str = "change-me"
-    jwt_algorithm: str = "HS256"
-    access_token_minutes: int = 60
-    bootstrap_username: str = "owner"
-    bootstrap_password: str = "secret123"
+    database_url: str
+    jwt_secret: str
+    jwt_algorithm: str
+    access_token_minutes: int
+    bootstrap_username: str
+    bootstrap_password: str
     worker_runtime: bool = False
-    hyperdrive_binding: str = "HYPERDRIVE"
+    hyperdrive_binding: str
 
     model_config = SettingsConfigDict(
         env_prefix="EXPENSE_TRACKER_",
-        env_file=".env",
+        env_file=(".env.example", ".env"),
         validate_assignment=True,
     )
 

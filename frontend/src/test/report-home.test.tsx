@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 
 import { ReportHomePage } from "../features/reports/ReportHomePage";
 import { api } from "../lib/api";
+import { bootstrapDisplayName, bootstrapUsername } from "./bootstrap-credentials";
 import { renderWithProviders } from "./test-utils";
 
 jest.mock("../lib/api", () => ({
@@ -31,8 +32,8 @@ test("report home renders the report dashboard with category, comparison, ledger
     if (url === "/settings") {
       return Promise.resolve({
         data: {
-          username: "owner",
-          display_name: "Owner",
+          username: bootstrapUsername,
+          display_name: bootstrapDisplayName,
           created_at: "2026-04-19T10:00:00Z",
           currency_code: "INR",
         },
@@ -547,8 +548,8 @@ test("report expense rows use the compact ledger structure", async () => {
     if (url === "/settings") {
       return Promise.resolve({
         data: {
-          username: "owner",
-          display_name: "Owner",
+          username: bootstrapUsername,
+          display_name: bootstrapDisplayName,
           created_at: "2026-04-19T10:00:00Z",
           currency_code: "INR",
         },
@@ -658,8 +659,8 @@ test("report expense rows keep the amount pinned right while truncating long con
     if (url === "/settings") {
       return Promise.resolve({
         data: {
-          username: "owner",
-          display_name: "Owner",
+          username: bootstrapUsername,
+          display_name: bootstrapDisplayName,
           created_at: "2026-04-19T10:00:00Z",
           currency_code: "INR",
         },

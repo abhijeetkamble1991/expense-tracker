@@ -12,6 +12,12 @@ Sync the backend dependencies with `uv`:
 uv sync
 ```
 
+Create your local environment file:
+
+```bash
+cp .env.example .env
+```
+
 Initialize the database schema explicitly:
 
 ```bash
@@ -52,8 +58,8 @@ The frontend uses a Vite proxy so requests to `/api/*` are forwarded to the back
 
 The backend seeds a single local account on first startup:
 
-- Username: `owner`
-- Password: `secret123`
+- Username: `expense-dev`
+- Password: `ved-321-esnepxe`
 
 You can override these with `EXPENSE_TRACKER_BOOTSTRAP_USERNAME` and `EXPENSE_TRACKER_BOOTSTRAP_PASSWORD`.
 
@@ -92,4 +98,4 @@ Playwright smoke:
 npm --prefix frontend exec playwright test
 ```
 
-The Playwright smoke test boots the backend with `uv run uvicorn`, boots the frontend with Vite on port `4173`, signs in with `EXPENSE_TRACKER_BOOTSTRAP_USERNAME` / `EXPENSE_TRACKER_BOOTSTRAP_PASSWORD` when those overrides are set, and otherwise uses the default seeded `owner` / `secret123` credentials.
+The Playwright smoke test boots the backend with `uv run uvicorn`, boots the frontend with Vite on port `4173`, signs in with `EXPENSE_TRACKER_BOOTSTRAP_USERNAME` / `EXPENSE_TRACKER_BOOTSTRAP_PASSWORD` when those overrides are set, and otherwise uses the default seeded `expense-dev` / `ved-321-esnepxe` credentials.

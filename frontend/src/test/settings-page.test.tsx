@@ -3,6 +3,12 @@ import userEvent from "@testing-library/user-event";
 
 import { SettingsPage } from "../features/settings/SettingsPage";
 import { api } from "../lib/api";
+import {
+  bootstrapDisplayName,
+  bootstrapPassword,
+  bootstrapUsername,
+  updatedBootstrapPassword,
+} from "./bootstrap-credentials";
 import { renderWithProviders } from "./test-utils";
 
 jest.mock("../lib/api", () => ({
@@ -23,8 +29,8 @@ beforeEach(() => {
 test("settings page loads and updates the global currency", async () => {
   mockedApi.get.mockResolvedValue({
     data: {
-      username: "owner",
-      display_name: "Owner",
+      username: bootstrapUsername,
+      display_name: bootstrapDisplayName,
       created_at: "2026-04-19T10:00:00Z",
       currency_code: "USD",
     },
@@ -33,7 +39,7 @@ test("settings page loads and updates the global currency", async () => {
     if (url === "/settings") {
       return Promise.resolve({
         data: {
-          username: "owner",
+          username: bootstrapUsername,
           display_name: "Akshay",
           created_at: "2026-04-19T10:00:00Z",
           currency_code: "INR",
@@ -53,8 +59,8 @@ test("settings page loads and updates the global currency", async () => {
   renderWithProviders(<SettingsPage />);
   const user = userEvent.setup();
 
-  expect(await screen.findByDisplayValue("Owner")).toBeInTheDocument();
-  expect(screen.getByDisplayValue("owner")).toBeDisabled();
+  expect(await screen.findByDisplayValue(bootstrapDisplayName)).toBeInTheDocument();
+  expect(screen.getByDisplayValue(bootstrapUsername)).toBeDisabled();
   expect(await screen.findByLabelText("Currency")).toHaveValue("USD");
   expect(
     screen.getByRole("option", { name: /US Dollar.*USD/i }),
@@ -76,14 +82,14 @@ test("settings page loads and updates the global currency", async () => {
   );
   expect(await screen.findByText(/settings updated/i)).toBeInTheDocument();
 
-  await user.type(screen.getByLabelText("Current password"), "secret123");
-  await user.type(screen.getByLabelText("New password"), "newsecret123");
+  await user.type(screen.getByLabelText("Current password"), bootstrapPassword);
+  await user.type(screen.getByLabelText("New password"), updatedBootstrapPassword);
   await user.click(screen.getByRole("button", { name: /change password/i }));
 
   await waitFor(() =>
     expect(mockedApi.patch).toHaveBeenCalledWith("/settings/password", {
-      current_password: "secret123",
-      new_password: "newsecret123",
+      current_password: bootstrapPassword,
+      new_password: updatedBootstrapPassword,
     }),
   );
   expect(await screen.findByText(/password updated/i)).toBeInTheDocument();

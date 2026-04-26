@@ -26,9 +26,14 @@ def client(tmp_path, monkeypatch) -> TestClient:
 
 @pytest.fixture
 def auth_headers(client) -> dict[str, str]:
+    from app.core.config import settings
+
     response = client.post(
         "/auth/login",
-        json={"username": "owner", "password": "secret123"},
+        json={
+            "username": settings.bootstrap_username,
+            "password": settings.bootstrap_password,
+        },
     )
     assert response.status_code == 200
     access_token = response.json()["access_token"]

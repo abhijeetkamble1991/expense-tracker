@@ -21,8 +21,9 @@ def test_init_db_migrates_legacy_users_table(client, tmp_path, monkeypatch):
     connection.execute(
         """
         INSERT INTO users (id, username, password_hash)
-        VALUES (1, 'owner', 'pbkdf2_sha256$100000$salt$hash')
-        """
+        VALUES (?, ?, ?)
+        """,
+        (1, settings.bootstrap_username, "pbkdf2_sha256$100000$salt$hash"),
     )
     connection.commit()
     connection.close()
@@ -43,7 +44,7 @@ def test_init_db_migrates_legacy_users_table(client, tmp_path, monkeypatch):
     verification.close()
 
     assert "display_name" in columns
-    assert row == ("owner", "Owner")
+    assert row == (settings.bootstrap_username, "Owner")
 
 
 def test_init_db_migrates_legacy_transactions_table(client, tmp_path, monkeypatch):
@@ -67,8 +68,14 @@ def test_init_db_migrates_legacy_transactions_table(client, tmp_path, monkeypatc
     connection.execute(
         """
         INSERT INTO users (id, username, password_hash, display_name)
-        VALUES (1, 'owner', 'pbkdf2_sha256$100000$salt$hash', 'Owner')
-        """
+        VALUES (?, ?, ?, ?)
+        """,
+        (
+            1,
+            settings.bootstrap_username,
+            "pbkdf2_sha256$100000$salt$hash",
+            settings.bootstrap_username.title(),
+        ),
     )
     connection.execute(
         """
