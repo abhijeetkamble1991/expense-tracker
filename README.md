@@ -12,6 +12,12 @@ Sync the backend dependencies with `uv`:
 uv sync
 ```
 
+Initialize the database schema explicitly:
+
+```bash
+uv run python -m app.scripts.init_db
+```
+
 Start the API:
 
 ```bash
@@ -50,6 +56,19 @@ The backend seeds a single local account on first startup:
 - Password: `secret123`
 
 You can override these with `EXPENSE_TRACKER_BOOTSTRAP_USERNAME` and `EXPENSE_TRACKER_BOOTSTRAP_PASSWORD`.
+
+## Cloudflare Workers
+
+The backend now includes a Cloudflare Workers entrypoint in [worker.py](/Users/akamble/Library/CloudStorage/OneDrive-CaliboInc/Documents/Repos/personal/expense-tracker/.worktrees/workers-migration/worker.py).
+
+Deployment notes:
+
+- use Hyperdrive or an explicit `EXPENSE_TRACKER_DATABASE_URL`
+- initialize the schema separately with `python -m app.scripts.init_db`
+- copy [wrangler.toml.example](/Users/akamble/Library/CloudStorage/OneDrive-CaliboInc/Documents/Repos/personal/expense-tracker/.worktrees/workers-migration/wrangler.toml.example) to `wrangler.toml`
+- set secrets for `EXPENSE_TRACKER_JWT_SECRET` and `EXPENSE_TRACKER_BOOTSTRAP_PASSWORD`
+
+Full setup is documented in [docs/deployment/cloudflare-workers.md](/Users/akamble/Library/CloudStorage/OneDrive-CaliboInc/Documents/Repos/personal/expense-tracker/.worktrees/workers-migration/docs/deployment/cloudflare-workers.md).
 
 ## Verification
 
