@@ -37,7 +37,7 @@ The API listens on `http://127.0.0.1:8000`.
 Build the backend image:
 
 ```bash
-docker build -t expense-tracker-backend .
+docker buildx build --platform linux/amd64 -f Dockerfile --no-cache -t abhijeetka/ep-tracker:1.0.1 .
 ```
 
 Run it locally with your environment file:
@@ -67,6 +67,27 @@ npm --prefix frontend run dev
 ```
 
 The frontend uses a Vite proxy so requests to `/api/*` are forwarded to the backend at `http://127.0.0.1:8000` during local development, preview, and Playwright runs.
+
+### Frontend Docker image
+
+Build the frontend image:
+
+```bash
+docker build -t expense-tracker-frontend ./frontend
+```
+
+Build it with an explicit backend API origin baked into the Vite bundle:
+
+```bash
+cd frontend
+docker buildx build --platform linux/amd64 -f Dockerfile --no-cache --build-arg VITE_API_BASE_URL=https://ep-tracker-api.dev.ibdp.calibo.com -t abhijeetka/ep-tracker-ui:1.0.1 .
+```
+
+Run it locally:
+
+```bash
+docker run --rm -p 8080:80 expense-tracker-frontend
+```
 
 ### Login
 
@@ -163,6 +184,16 @@ helm install expense-tracker-backend ./helm/expense-tracker-backend \
 
 The chart deploys only the application. It does not create PostgreSQL or any other external services.
 
+The repository also includes a frontend chart in [helm/expense-tracker-frontend](/Users/akamble/Library/CloudStorage/OneDrive-CaliboInc/Documents/Repos/personal/expense-tracker/helm/expense-tracker-frontend). The frontend is a static Vite build served by Nginx and expects `/api` to be routed to the backend on the same host.
+
+Install the frontend chart:
+
+```bash
+helm install expense-tracker-frontend ./helm/expense-tracker-frontend
+```
+
+If you expose the frontend with ingress, configure the backend ingress or your ingress controller so requests to `/api` on the same host go to the backend service.
+
 ## Verification
 
 Backend:
@@ -186,3 +217,5 @@ npm --prefix frontend exec playwright test
 ```
 
 The Playwright smoke test boots the backend with `uv run uvicorn`, boots the frontend with Vite on port `4173`, and signs in with the configured `EXPENSE_TRACKER_BOOTSTRAP_USERNAME` / `EXPENSE_TRACKER_BOOTSTRAP_PASSWORD` credentials.
+
+Deployment Done on log-analysis namespace in dev enviornment.

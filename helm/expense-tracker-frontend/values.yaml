@@ -1,0 +1,59 @@
+replicaCount: 1
+
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  repository: abhijeetka/ep-tracker-ui
+  pullPolicy: IfNotPresent
+  tag: "1.0.1"
+
+imagePullSecrets: []
+
+podAnnotations: {}
+podLabels: {}
+
+service:
+  type: LoadBalancer
+  port: 443
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: expense-tracker.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+resources: {}
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 2
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+apiBaseUrl: "https://ep-tracker-api.dev.ibdp.calibo.com/"
+# The frontend calls relative /api paths.
+# Route /api on the same host to the backend using either:
+# 1. the backend chart ingress with the same host and an /api path, or
+# 2. an ingress/controller rule outside this chart.

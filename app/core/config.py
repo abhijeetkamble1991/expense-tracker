@@ -23,6 +23,14 @@ def normalize_database_url(database_url: str) -> str:
     return database_url
 
 
+def normalize_cors_allowed_origins(origins: str | list[str] | None) -> list[str]:
+    if origins is None:
+        return []
+    if isinstance(origins, str):
+        return [origin.strip() for origin in origins.split(",") if origin.strip()]
+    return [origin.strip() for origin in origins if origin.strip()]
+
+
 class Settings(BaseSettings):
     database_url: str = "sqlite:///./expense_tracker.db"
     database_url_encrypted: str | None = None
@@ -30,6 +38,7 @@ class Settings(BaseSettings):
     jwt_secret: str = "expense-tracker-dev-jwt-secret"
     jwt_algorithm: str = "HS256"
     access_token_minutes: int = 60
+    cors_allowed_origins: str = ""
     bootstrap_username: str = "abhijeet"
     bootstrap_password: str = "Abhijeet123#"
     worker_runtime: bool = False
@@ -54,6 +63,7 @@ class Settings(BaseSettings):
             normalize_database_url(resolved_url or self.database_url),
         )
         return self
+
 
 
 settings = Settings()
