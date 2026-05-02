@@ -1,6 +1,55 @@
 import sqlite3
 
 
+def test_init_db_seeds_default_spend_categories(client):
+    from sqlalchemy import select
+    from sqlalchemy.orm import Session
+
+    from app.db.session import get_engine
+    from app.models.spend_category import SpendCategory
+
+    with Session(get_engine()) as db:
+        category_names = list(
+            db.scalars(select(SpendCategory.name).order_by(SpendCategory.name)).all()
+        )
+
+    assert category_names == [
+        "Bills",
+        "Commute",
+        "Healthcare",
+        "Household",
+        "Leisure",
+        "Subscriptions",
+    ]
+
+
+def test_init_db_repairs_invalid_bootstrap_password_hash(client):
+    from sqlalchemy import select
+    from sqlalchemy.orm import Session
+
+    from app.core.config import settings
+    from app.core.security import verify_password
+    from app.db.session import get_engine, init_db
+    from app.models.user import User
+
+    with Session(get_engine()) as db:
+        user = db.scalar(select(User).where(User.username == settings.bootstrap_username))
+        assert user is not None
+        user.password_hash = "not-a-valid-hash"
+        db.commit()
+
+    init_db()
+
+    with Session(get_engine()) as db:
+        repaired_user = db.scalar(
+            select(User).where(User.username == settings.bootstrap_username)
+        )
+        assert repaired_user is not None
+        assert verify_password(
+            settings.bootstrap_password, repaired_user.password_hash
+        )
+
+
 def test_init_db_migrates_legacy_users_table(client, tmp_path, monkeypatch):
     from app.core.config import settings
     from app.db.session import get_engine, init_db
@@ -28,10 +77,22 @@ def test_init_db_migrates_legacy_users_table(client, tmp_path, monkeypatch):
     connection.commit()
     connection.close()
 
-    monkeypatch.setattr(settings, "database_url", f"sqlite:///{legacy_db}")
+    original_values = {
+        "database_url": settings.database_url,
+        "database_url_encrypted": getattr(settings, "database_url_encrypted", None),
+        "database_url_key": getattr(settings, "database_url_key", None),
+    }
+    object.__setattr__(settings, "database_url", f"sqlite:///{legacy_db}")
+    object.__setattr__(settings, "database_url_encrypted", None)
+    object.__setattr__(settings, "database_url_key", None)
     get_engine.cache_clear()
 
-    init_db()
+    try:
+        init_db()
+    finally:
+        for key, value in original_values.items():
+            object.__setattr__(settings, key, value)
+        get_engine.cache_clear()
 
     verification = sqlite3.connect(legacy_db)
     columns = {
@@ -105,10 +166,22 @@ def test_init_db_migrates_legacy_transactions_table(client, tmp_path, monkeypatc
     connection.commit()
     connection.close()
 
-    monkeypatch.setattr(settings, "database_url", f"sqlite:///{legacy_db}")
+    original_values = {
+        "database_url": settings.database_url,
+        "database_url_encrypted": getattr(settings, "database_url_encrypted", None),
+        "database_url_key": getattr(settings, "database_url_key", None),
+    }
+    object.__setattr__(settings, "database_url", f"sqlite:///{legacy_db}")
+    object.__setattr__(settings, "database_url_encrypted", None)
+    object.__setattr__(settings, "database_url_key", None)
     get_engine.cache_clear()
 
-    init_db()
+    try:
+        init_db()
+    finally:
+        for key, value in original_values.items():
+            object.__setattr__(settings, key, value)
+        get_engine.cache_clear()
 
     verification = sqlite3.connect(legacy_db)
     columns = {

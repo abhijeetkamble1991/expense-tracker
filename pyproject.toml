@@ -7,19 +7,25 @@ name = "expense-tracker"
 version = "0.1.0"
 description = "Monthly expense tracker with PDF import and reporting"
 readme = "README.md"
-requires-python = ">=3.14"
+requires-python = ">=3.13"
 dependencies = [
   "fastapi>=0.115.0",
-  "uvicorn>=0.30.0",
   "httpx>=0.28.0",
-  "pytest>=8.3.0",
+  "pydantic>=2.6.0",
   "pypdf>=5.0.0",
   "pg8000>=1.31.0",
   "sqlalchemy>=2.0.0",
   "pydantic-settings>=2.6.0",
   "PyJWT>=2.9.0",
   "python-multipart>=0.0.20",
-  "pywrangler>=0.0.2",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3.0",
+  "uvicorn>=0.30.0",
+  "workers-py>=0.0.20",
+  "workers-runtime-sdk>=0.0.20",
 ]
 
 [tool.pytest.ini_options]

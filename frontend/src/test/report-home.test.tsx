@@ -756,3 +756,41 @@ test("report expense rows keep the amount pinned right while truncating long con
   expect(content).toHaveClass("report-transaction-row__content");
   expect(amount).toHaveClass("report-transaction-row__amount");
 });
+
+test("report home explains empty month state", async () => {
+  mockedApi.get.mockImplementation((url) => {
+    if (url === "/months") {
+      return Promise.resolve({ data: [] });
+    }
+
+    if (url === "/settings") {
+      return Promise.resolve({
+        data: {
+          username: bootstrapUsername,
+          display_name: bootstrapDisplayName,
+          created_at: "2026-04-19T10:00:00Z",
+          currency_code: "INR",
+        },
+      });
+    }
+
+    if (url === "/spend-categories") {
+      return Promise.resolve({
+        data: [{ id: 7, name: "Groceries", is_active: true }],
+      });
+    }
+
+    return Promise.reject(new Error(`Unexpected GET ${url}`));
+  });
+
+  renderWithProviders(<ReportHomePage />);
+
+  expect(await screen.findByText(/no tracked months yet/i)).toBeInTheDocument();
+  expect(
+    screen.getByText(
+      /import a statement or add a transaction before monthly reports can be generated/i,
+    ),
+  ).toBeInTheDocument();
+  expect(screen.getByLabelText("Year")).toBeDisabled();
+  expect(screen.getByLabelText("Month")).toBeDisabled();
+});

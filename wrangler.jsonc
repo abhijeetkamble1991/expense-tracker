@@ -1,7 +1,7 @@
 {
   "$schema" : "./node_modules/wrangler/config-schema.json",
   "name": "expense-tracker",
-  "main": "worker.py",
+  "main": "app/worker.py",
   "compatibility_flags": [
     "python_workers"
   ],
