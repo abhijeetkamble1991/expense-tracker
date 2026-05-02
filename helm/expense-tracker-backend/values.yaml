@@ -5,8 +5,8 @@ fullnameOverride: ""
 
 image:
   repository: abhijeetka/ep-tracker
-  pullPolicy: IfNotPresent
-  tag: "1.0.0"
+  pullPolicy: Always
+  tag: "1.0.1"
 
 imagePullSecrets: []
 
@@ -15,7 +15,7 @@ podLabels: {}
 
 service:
   type: LoadBalancer
-  port: 8000
+  port: 443
 
 ingress:
   enabled: false
@@ -58,6 +58,7 @@ affinity: {}
 # The direct db.<project-ref>.supabase.co:5432 hostname is IPv6-only by default.
 env:
   EXPENSE_TRACKER_DATABASE_URL_ENCRYPTED: "v1.-I50LPI-WSq2kYliFf-CSL2db7p-Nzi2bByATkKCn9u9fQtd5byRxq3bPfl_gMtguSFeNyG0mewb9PcwwVfqXHXT-8H2YfS28OfOl1x2AZVkl-2OKuA4dN4wNE867oBLAtVpjcyy-s8mLDGhC58ZwyQlgLijo012hiWBNhWHBQUu-zm8N_sDUWxFDP4L3a5-r6tVH2XykjJzZw6w-nAPgOibuBFCIsFTOWXLuhsN-WOn2i8-aMEOHIDW0rBkmJQXoxKhjnQHzUWnjg"
+  EXPENSE_TRACKER_CORS_ALLOWED_ORIGINS: "https://ep-tracker.dev.ibdp.calibo.com"
   EXPENSE_TRACKER_JWT_SECRET: "expense-tracker-dev-jwt-secret"
   EXPENSE_TRACKER_JWT_ALGORITHM: "HS256"
   EXPENSE_TRACKER_ACCESS_TOKEN_MINUTES: 60

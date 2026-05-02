@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "expense-tracker-backend.fullname" . }}
+  name: {{ include "expense-tracker-frontend.fullname" . }}
   labels:
-    {{- include "expense-tracker-backend.labels" . | nindent 4 }}
+    {{- include "expense-tracker-frontend.labels" . | nindent 4 }}
   annotations:
     service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
     service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
@@ -17,4 +17,4 @@ spec:
       protocol: TCP
       name: http
   selector:
-    {{- include "expense-tracker-backend.selectorLabels" . | nindent 4 }}
+    {{- include "expense-tracker-frontend.selectorLabels" . | nindent 4 }}
