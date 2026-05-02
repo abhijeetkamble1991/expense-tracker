@@ -30,6 +30,14 @@ def test_env_example_contains_bootstrap_credentials() -> None:
     ]
 
 
+def test_env_example_contains_database_url_encryption_settings() -> None:
+    example_values = _read_env_file(Path(".env.example"))
+
+    assert "EXPENSE_TRACKER_DATABASE_URL" in example_values
+    assert "EXPENSE_TRACKER_DATABASE_URL_ENCRYPTED" in example_values
+    assert "EXPENSE_TRACKER_DATABASE_URL_KEY" in example_values
+
+
 def test_gitignore_ignores_local_env_file() -> None:
     content = Path(".gitignore").read_text()
 

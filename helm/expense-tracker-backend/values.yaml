@@ -1,0 +1,67 @@
+replicaCount: 1
+
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  repository: abhijeetka/ep-tracker
+  pullPolicy: IfNotPresent
+  tag: "1.0.0"
+
+imagePullSecrets: []
+
+podAnnotations: {}
+podLabels: {}
+
+service:
+  type: LoadBalancer
+  port: 8000
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: expense-tracker.local
+      paths:
+        - path: /ep-tracker
+          pathType: Prefix
+  tls: []
+
+resources: {}
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# For Supabase from Docker/Kubernetes or other IPv4-only networks,
+# prefer the session pooler hostname on port 5432:
+# EXPENSE_TRACKER_DATABASE_URL: "postgresql+pg8000://postgres.your-project-ref:your-password@aws-0-your-region.pooler.supabase.com:5432/postgres?sslmode=require"
+# The direct db.<project-ref>.supabase.co:5432 hostname is IPv6-only by default.
+env:
+  EXPENSE_TRACKER_DATABASE_URL_ENCRYPTED: "v1.-I50LPI-WSq2kYliFf-CSL2db7p-Nzi2bByATkKCn9u9fQtd5byRxq3bPfl_gMtguSFeNyG0mewb9PcwwVfqXHXT-8H2YfS28OfOl1x2AZVkl-2OKuA4dN4wNE867oBLAtVpjcyy-s8mLDGhC58ZwyQlgLijo012hiWBNhWHBQUu-zm8N_sDUWxFDP4L3a5-r6tVH2XykjJzZw6w-nAPgOibuBFCIsFTOWXLuhsN-WOn2i8-aMEOHIDW0rBkmJQXoxKhjnQHzUWnjg"
+  EXPENSE_TRACKER_JWT_SECRET: "expense-tracker-dev-jwt-secret"
+  EXPENSE_TRACKER_JWT_ALGORITHM: "HS256"
+  EXPENSE_TRACKER_ACCESS_TOKEN_MINUTES: 60
+  EXPENSE_TRACKER_BOOTSTRAP_USERNAME: "sss"
+  EXPENSE_TRACKER_BOOTSTRAP_PASSWORD: "sss"
+  EXPENSE_TRACKER_HYPERDRIVE_BINDING: "HYPERDRIVE"
+  EXPENSE_TRACKER_DATABASE_URL_KEY: "Cebr6G1iuN2nKCHZi5BVHL-I9f6hsIgc3TfrXC4xxqs"

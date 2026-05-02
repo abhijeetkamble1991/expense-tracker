@@ -1,6 +1,6 @@
 from collections.abc import Generator
 from functools import lru_cache
-from ssl import create_default_context
+from ssl import CERT_NONE, create_default_context
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from sqlalchemy import create_engine, inspect, text
@@ -28,7 +28,16 @@ def _create_engine():
             else:
                 filtered_query.append((key, value))
 
-        if sslmode in {"require", "prefer", "verify-ca", "verify-full"}:
+        if sslmode in {"require", "prefer"}:
+            ssl_context = create_default_context()
+            ssl_context.check_hostname = False
+            ssl_context.verify_mode = CERT_NONE
+            connect_args["ssl_context"] = ssl_context
+        elif sslmode == "verify-ca":
+            ssl_context = create_default_context()
+            ssl_context.check_hostname = False
+            connect_args["ssl_context"] = ssl_context
+        elif sslmode == "verify-full":
             connect_args["ssl_context"] = create_default_context()
 
         if sslmode is not None:
@@ -124,10 +133,11 @@ def run_schema_migrations(engine) -> None:
 
 def init_db() -> None:
     import app.models  # noqa: F401
-    from app.seed import ensure_bootstrap_user
+    from app.seed import ensure_bootstrap_user, ensure_default_spend_categories
 
     engine = get_engine()
     Base.metadata.create_all(bind=engine)
     run_schema_migrations(engine)
     with Session(engine) as db:
         ensure_bootstrap_user(db)
+        ensure_default_spend_categories(db)

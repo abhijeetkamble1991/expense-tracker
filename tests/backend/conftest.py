@@ -7,21 +7,27 @@ def client(tmp_path, monkeypatch) -> TestClient:
     from app.core.config import settings
     from app.db.session import get_engine
 
-    monkeypatch.setattr(
-        settings,
-        "database_url",
-        f"sqlite:///{tmp_path / 'test.db'}",
-    )
+    original_values = {
+        "database_url": settings.database_url,
+        "database_url_encrypted": getattr(settings, "database_url_encrypted", None),
+        "database_url_key": getattr(settings, "database_url_key", None),
+    }
+    object.__setattr__(settings, "database_url", f"sqlite:///{tmp_path / 'test.db'}")
+    object.__setattr__(settings, "database_url_encrypted", None)
+    object.__setattr__(settings, "database_url_key", None)
     get_engine.cache_clear()
 
     from app.main import create_app
 
-    with TestClient(create_app()) as test_client:
-        yield test_client
-
-    engine = get_engine()
-    engine.dispose()
-    get_engine.cache_clear()
+    try:
+        with TestClient(create_app()) as test_client:
+            yield test_client
+    finally:
+        engine = get_engine()
+        engine.dispose()
+        for key, value in original_values.items():
+            object.__setattr__(settings, key, value)
+        get_engine.cache_clear()
 
 
 @pytest.fixture

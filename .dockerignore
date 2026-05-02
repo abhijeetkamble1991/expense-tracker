@@ -1,0 +1,16 @@
+.git
+.idea
+.merge-backups
+.pytest_cache
+.venv
+__pycache__
+*.pyc
+.env
+expense_tracker.db
+frontend
+python_modules
+tests
+docs
+helm
+wrangler.toml
+wrangler.jsonc
