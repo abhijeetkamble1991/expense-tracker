@@ -103,6 +103,7 @@ export function TransactionsPage() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionTransactionId, setActionTransactionId] = useState<number | null>(null);
   const currencyCode = settings?.currency_code ?? "USD";
+  const hasTrackedMonths = months.length > 0;
 
   useEffect(() => {
     if (months.length === 0) {
@@ -219,6 +220,7 @@ export function TransactionsPage() {
           <label className="field">
             Year
             <select
+              disabled={!hasTrackedMonths}
               onChange={(event) => {
                 const nextYear = event.target.value;
                 setSelectedYear(nextYear);
@@ -227,6 +229,9 @@ export function TransactionsPage() {
               }}
               value={selectedYear}
             >
+              {!hasTrackedMonths ? (
+                <option value="">No tracked years</option>
+              ) : null}
               {yearOptions.map((year) => (
                 <option key={year} value={year}>
                   {year}
@@ -237,9 +242,13 @@ export function TransactionsPage() {
           <label className="field">
             Month
             <select
+              disabled={!hasTrackedMonths}
               onChange={(event) => setSelectedMonth(event.target.value)}
               value={currentMonth}
             >
+              {!hasTrackedMonths ? (
+                <option value="">No tracked months</option>
+              ) : null}
               {monthOptions.map((month) => (
                 <option key={month} value={month}>
                   {formatMonthOptionLabel(month)}
@@ -263,6 +272,12 @@ export function TransactionsPage() {
       </div>
 
       {isLoading ? <p className="status-copy">Loading transactions…</p> : null}
+      {!isLoading && !hasTrackedMonths ? (
+        <p className="status-copy">
+          No tracked months yet. Add a manual transaction or import a statement to
+          create the first month.
+        </p>
+      ) : null}
       {actionMessage ? <p className="status-copy">{actionMessage}</p> : null}
       {actionError ? <p className="status-copy">{actionError}</p> : null}
 

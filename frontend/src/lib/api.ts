@@ -3,8 +3,22 @@ import axios from "axios";
 export const AUTH_TOKEN_STORAGE_KEY = "expense-tracker.auth-token";
 export const SESSION_ACTIVITY_STORAGE_KEY = "expense-tracker.session-last-activity";
 export const SESSION_TIMEOUT_MS = 5 * 60 * 1000;
-const apiBaseUrl =
-  typeof __APP_API_BASE_URL__ === "string" ? __APP_API_BASE_URL__ : "/api";
+
+export function normalizeApiBaseUrl(
+  baseUrl: string,
+  pageProtocol =
+    typeof window !== "undefined" ? window.location.protocol : undefined,
+) {
+  if (pageProtocol === "https:" && baseUrl.startsWith("http://")) {
+    return `https://${baseUrl.slice("http://".length)}`;
+  }
+
+  return baseUrl;
+}
+
+const apiBaseUrl = normalizeApiBaseUrl(
+  typeof __APP_API_BASE_URL__ === "string" ? __APP_API_BASE_URL__ : "/api",
+);
 
 export function getStoredToken(): string | null {
   if (typeof window === "undefined") {

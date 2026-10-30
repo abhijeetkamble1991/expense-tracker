@@ -60,6 +60,7 @@ export function ReportHomePage() {
   const [selectedExpenseListCategory, setSelectedExpenseListCategory] =
     useState<string>("all");
   const currencyCode = settings?.currency_code ?? "USD";
+  const hasTrackedMonths = months.length > 0;
 
   useEffect(() => {
     if (months.length === 0) {
@@ -199,6 +200,7 @@ export function ReportHomePage() {
           <label className="field">
             Year
             <select
+              disabled={!hasTrackedMonths}
               onChange={(event) => {
                 const nextYear = event.target.value;
                 setSelectedYear(nextYear);
@@ -207,6 +209,7 @@ export function ReportHomePage() {
               }}
               value={selectedYear}
             >
+              {!hasTrackedMonths ? <option value="">No tracked years</option> : null}
               {yearOptions.map((year) => (
                 <option key={year} value={year}>
                   {year}
@@ -217,9 +220,11 @@ export function ReportHomePage() {
           <label className="field">
             Month
             <select
+              disabled={!hasTrackedMonths}
               onChange={(event) => setSelectedMonth(event.target.value)}
               value={currentMonth}
             >
+              {!hasTrackedMonths ? <option value="">No tracked months</option> : null}
               {monthOptions.map((month) => (
                 <option key={month} value={month}>
                   {formatMonthOptionLabel(month)}
@@ -232,6 +237,18 @@ export function ReportHomePage() {
 
       {isLoadingMonths || isLoadingTrendReports ? (
         <p className="status-copy">Loading monthly report…</p>
+      ) : null}
+
+      {!isLoadingMonths && !hasTrackedMonths ? (
+        <section className="report-panel">
+          <div className="report-panel__header">
+            <h3>No tracked months yet</h3>
+            <span>
+              Import a statement or add a transaction before monthly reports can be
+              generated.
+            </span>
+          </div>
+        </section>
       ) : null}
 
       <div className="summary-strip" aria-label={`${currentMonth} totals`}>

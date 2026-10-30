@@ -27,17 +27,31 @@ def hash_password(password: str) -> str:
     return f"pbkdf2_sha256${PBKDF2_ITERATIONS}${salt}${password_hash}"
 
 
-def verify_password(password: str, stored_password_hash: str) -> bool:
+def is_password_hash_supported(stored_password_hash: str) -> bool:
     try:
         algorithm, iterations, salt, expected_hash = stored_password_hash.split(
             "$", maxsplit=3
         )
-        parsed_iterations = int(iterations)
     except (TypeError, ValueError):
         return False
 
     if algorithm != "pbkdf2_sha256":
         return False
+
+    try:
+        int(iterations)
+    except ValueError:
+        return False
+
+    return bool(salt and expected_hash)
+
+
+def verify_password(password: str, stored_password_hash: str) -> bool:
+    if not is_password_hash_supported(stored_password_hash):
+        return False
+
+    _, iterations, salt, expected_hash = stored_password_hash.split("$", maxsplit=3)
+    parsed_iterations = int(iterations)
 
     password_hash = hashlib.pbkdf2_hmac(
         "sha256",

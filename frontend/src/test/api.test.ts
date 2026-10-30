@@ -1,6 +1,22 @@
 import { AxiosHeaders } from "axios";
 
-import { AUTH_TOKEN_STORAGE_KEY, SESSION_ACTIVITY_STORAGE_KEY, api } from "../lib/api";
+import {
+  AUTH_TOKEN_STORAGE_KEY,
+  SESSION_ACTIVITY_STORAGE_KEY,
+  api,
+  normalizeApiBaseUrl,
+} from "../lib/api";
+
+describe("normalizeApiBaseUrl", () => {
+  test("upgrades insecure absolute API URLs when the page is served over https", () => {
+    expect(
+      normalizeApiBaseUrl(
+        "http://api.example.com",
+        "https:",
+      ),
+    ).toBe("https://api.example.com");
+  });
+});
 
 describe("api session interceptor", () => {
   beforeEach(() => {

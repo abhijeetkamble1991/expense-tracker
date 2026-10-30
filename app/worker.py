@@ -7,6 +7,15 @@ except ModuleNotFoundError:  # pragma: no cover - only used outside Workers runt
     class WorkerEntrypoint:  # type: ignore[override]
         pass
 
+import sys
+import types
+from pathlib import Path
+
+if __package__ in {None, ""} and "app" not in sys.modules:
+    package = types.ModuleType("app")
+    package.__path__ = [str(Path(__file__).resolve().parent)]
+    sys.modules["app"] = package
+
 from app.core.config import apply_cloudflare_runtime_env
 from app.main import create_app
 

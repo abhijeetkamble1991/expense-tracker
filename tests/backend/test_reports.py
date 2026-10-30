@@ -178,72 +178,86 @@ def test_regenerate_report_upgrades_legacy_monthly_reports_table_and_stores_snap
 
     from app.core.config import settings
 
-    monkeypatch.setattr(settings, "database_url", f"sqlite:///{database_path}")
+    original_values = {
+        "database_url": settings.database_url,
+        "database_url_encrypted": getattr(settings, "database_url_encrypted", None),
+        "database_url_key": getattr(settings, "database_url_key", None),
+    }
+    object.__setattr__(settings, "database_url", f"sqlite:///{database_path}")
+    object.__setattr__(settings, "database_url_encrypted", None)
+    object.__setattr__(settings, "database_url_key", None)
     get_engine.cache_clear()
 
     from app.main import create_app
 
-    with TestClient(create_app()) as client:
-        auth_response = client.post(
-            "/auth/login",
-            json={
-                "username": settings.bootstrap_username,
-                "password": settings.bootstrap_password,
-            },
-        )
-        assert auth_response.status_code == 200
-        auth_headers = {
-            "Authorization": f"Bearer {auth_response.json()['access_token']}",
-        }
-
-        groceries_response = client.post(
-            "/spend-categories",
-            headers=auth_headers,
-            json={"name": "Groceries"},
-        )
-        assert groceries_response.status_code == 201
-
-        transaction_response = client.post(
-            "/transactions/manual",
-            headers=auth_headers,
-            json={
-                "transaction_date": "2026-04-11",
-                "amount": "1850.50",
-                "description": "Weekend groceries",
-                "merchant": "Nature Basket",
-                "month_key": "2026-04",
-                "expense_category": "personal",
-                "spend_category_id": groceries_response.json()["id"],
-            },
-        )
-        assert transaction_response.status_code == 201
-
-        report_response = client.post("/reports/2026-04/regenerate", headers=auth_headers)
-        assert report_response.status_code == 200
-
-        with Session(get_engine()) as db:
-            columns = {
-                row[1]
-                for row in db.execute(text("PRAGMA table_info(monthly_reports)")).all()
+    try:
+        with TestClient(create_app()) as client:
+            auth_response = client.post(
+                "/auth/login",
+                json={
+                    "username": settings.bootstrap_username,
+                    "password": settings.bootstrap_password,
+                },
+            )
+            assert auth_response.status_code == 200
+            auth_headers = {
+                "Authorization": f"Bearer {auth_response.json()['access_token']}",
             }
-            assert {
-                "total_amount",
-                "common_amount",
-                "personal_amount",
-                "unresolved_count",
-                "summary_json",
-            } <= columns
 
-            stored_report = db.execute(
-                text(
-                    """
-                    SELECT month_key, total_amount, common_amount, personal_amount, unresolved_count
-                    FROM monthly_reports
-                    WHERE month_key = :month_key
-                    """
-                ),
-                {"month_key": "2026-04"},
-            ).one()
+            groceries_response = client.post(
+                "/spend-categories",
+                headers=auth_headers,
+                json={"name": "Groceries"},
+            )
+            assert groceries_response.status_code == 201
+
+            transaction_response = client.post(
+                "/transactions/manual",
+                headers=auth_headers,
+                json={
+                    "transaction_date": "2026-04-11",
+                    "amount": "1850.50",
+                    "description": "Weekend groceries",
+                    "merchant": "Nature Basket",
+                    "month_key": "2026-04",
+                    "expense_category": "personal",
+                    "spend_category_id": groceries_response.json()["id"],
+                },
+            )
+            assert transaction_response.status_code == 201
+
+            report_response = client.post(
+                "/reports/2026-04/regenerate", headers=auth_headers
+            )
+            assert report_response.status_code == 200
+
+            with Session(get_engine()) as db:
+                columns = {
+                    row[1]
+                    for row in db.execute(text("PRAGMA table_info(monthly_reports)")).all()
+                }
+                assert {
+                    "total_amount",
+                    "common_amount",
+                    "personal_amount",
+                    "unresolved_count",
+                    "summary_json",
+                } <= columns
+
+                stored_report = db.execute(
+                    text(
+                        """
+                        SELECT month_key, total_amount, common_amount, personal_amount, unresolved_count
+                        FROM monthly_reports
+                        WHERE month_key = :month_key
+                        """
+                    ),
+                    {"month_key": "2026-04"},
+                ).one()
+    finally:
+        for key, value in original_values.items():
+            object.__setattr__(settings, key, value)
+        get_engine.cache_clear()
 
         assert stored_report == ("2026-04", 1850.5, 0, 1850.5, 0)
 

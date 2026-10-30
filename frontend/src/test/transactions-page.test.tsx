@@ -400,3 +400,36 @@ test("transactions page confirms before deleting a transaction", async () => {
   expect(mockedApi.delete).toHaveBeenCalledWith("/transactions/76");
   expect(screen.queryByText("AWS")).not.toBeInTheDocument();
 });
+
+test("transactions page explains empty month state", async () => {
+  mockedApi.get.mockImplementation((url) => {
+    if (url === "/months") {
+      return Promise.resolve({ data: [] });
+    }
+
+    if (url === "/settings") {
+      return Promise.resolve({ data: { currency_code: "USD" } });
+    }
+
+    if (url === "/spend-categories") {
+      return Promise.resolve({
+        data: [{ id: 7, name: "Groceries", is_active: true }],
+      });
+    }
+
+    if (url === "/transactions") {
+      return Promise.resolve({ data: [] });
+    }
+
+    return Promise.reject(new Error(`Unexpected GET ${url}`));
+  });
+
+  renderWithProviders(<TransactionsPage />);
+
+  expect(await screen.findByText(/no tracked months yet/i)).toBeInTheDocument();
+  expect(
+    screen.getByText(/add a manual transaction or import a statement to create the first month/i),
+  ).toBeInTheDocument();
+  expect(screen.getByLabelText("Year")).toBeDisabled();
+  expect(screen.getByLabelText("Month")).toBeDisabled();
+});
